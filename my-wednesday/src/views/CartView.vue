@@ -1,19 +1,93 @@
 <script setup>
+import { ref, computed, watch } from 'vue'
 import { useCartStore } from '../stores/cart'
-import { RouterLink } from 'vue-router'
+import { useUserStore } from '../stores/user'
+import { useRouter, RouterLink } from 'vue-router'
+import ProductImage from '../components/ProductImage.vue'
 
+const router = useRouter()
 const cart = useCartStore()
+const user = useUserStore()
+
+const selectedIds = ref(new Set())
+
+watch(
+  () => cart.items.map((i) => i.id),
+  (ids) => {
+    selectedIds.value = new Set(ids)
+  },
+  { immediate: true }
+)
 
 const formatPrice = (n) => n.toLocaleString('id-ID')
+
+const selectedItems = computed(() =>
+  cart.items.filter((i) => selectedIds.value.has(i.id))
+)
+const selectedTotal = computed(() =>
+  selectedItems.value.reduce((sum, i) => sum + i.price * i.qty, 0)
+)
+
+const toggleSelect = (id) => {
+  const next = new Set(selectedIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  selectedIds.value = next
+}
+
+const selectAll = () => {
+  selectedIds.value = new Set(cart.items.map((i) => i.id))
+}
+
+const deselectAll = () => {
+  selectedIds.value = new Set()
+}
+
+const removeSelected = () => {
+  cart.removeMany([...selectedIds.value])
+}
+
+const goCheckout = () => {
+  if (!user.isLoggedIn) {
+    router.push({ path: '/login', query: { returnUrl: '/cart' } })
+    return
+  }
+  const ids = [...selectedIds.value]
+  if (!ids.length) return
+  cart.setCheckoutIds(ids)
+  router.push('/checkout')
+}
 </script>
 
 <template>
   <div class="cart-page">
     <h1 class="page-title">Cart</h1>
     <div v-if="cart.count" class="cart-content">
+      <div class="cart-actions">
+        <div class="select-actions">
+          <button class="btn-select" @click="selectAll">Pilih Semua</button>
+          <button class="btn-select" @click="deselectAll">Batal Pilih</button>
+          <button
+            v-if="selectedIds.size"
+            class="btn-remove-selected"
+            @click="removeSelected"
+          >
+            Hapus Terpilih ({{ selectedIds.size }})
+          </button>
+        </div>
+      </div>
       <TransitionGroup name="list" tag="div" class="cart-list">
         <div v-for="item in cart.items" :key="item.id" class="cart-item">
-          <img :src="item.image" :alt="item.name" class="item-image" />
+          <label class="item-checkbox">
+            <input
+              type="checkbox"
+              :checked="selectedIds.has(item.id)"
+              @change="toggleSelect(item.id)"
+            />
+          </label>
+          <div class="item-image-wrap">
+            <ProductImage :src="item.image" :alt="item.name" />
+          </div>
           <div class="item-info">
             <h3 class="item-name">{{ item.name }}</h3>
             <p class="item-price">{{ formatPrice(item.price) }}</p>
@@ -28,8 +102,14 @@ const formatPrice = (n) => n.toLocaleString('id-ID')
         </div>
       </TransitionGroup>
       <div class="cart-footer">
-        <p class="cart-total">Total: {{ formatPrice(cart.total) }}</p>
-        <button class="btn-checkout">Checkout</button>
+        <p class="cart-total">Total terpilih: {{ formatPrice(selectedTotal) }}</p>
+        <button
+          class="btn-checkout"
+          :disabled="!selectedIds.size"
+          @click="goCheckout"
+        >
+          Bayar Terpilih ({{ selectedIds.size }})
+        </button>
       </div>
     </div>
     <div v-else class="cart-empty">
@@ -70,9 +150,63 @@ const formatPrice = (n) => n.toLocaleString('id-ID')
   gap: 1rem;
 }
 
+.cart-actions {
+  margin-bottom: 1rem;
+}
+
+.select-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.btn-select {
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-select:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text);
+}
+
+.btn-remove-selected {
+  padding: 0.4rem 0.8rem;
+  background: rgba(255, 80, 80, 0.2);
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  color: #ff6b6b;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-remove-selected:hover {
+  background: rgba(255, 80, 80, 0.3);
+}
+
+.item-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.item-checkbox input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .cart-item {
   display: grid;
-  grid-template-columns: 80px 1fr auto auto auto;
+  grid-template-columns: 36px 80px 1fr auto auto auto;
   align-items: center;
   gap: 1.5rem;
   padding: 1rem;
@@ -81,11 +215,18 @@ const formatPrice = (n) => n.toLocaleString('id-ID')
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-.item-image {
+.item-image-wrap {
   width: 80px;
   height: 80px;
-  object-fit: cover;
   border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.item-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .item-name {
@@ -180,9 +321,14 @@ const formatPrice = (n) => n.toLocaleString('id-ID')
   transition: background 0.3s ease, transform 0.3s ease;
 }
 
-.btn-checkout:hover {
+.btn-checkout:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: translateY(-2px);
+}
+
+.btn-checkout:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .cart-empty {
@@ -243,14 +389,13 @@ const formatPrice = (n) => n.toLocaleString('id-ID')
   }
 
   .cart-item {
-    grid-template-columns: 60px 1fr;
-    grid-template-rows: auto auto auto;
+    grid-template-columns: 28px 60px 1fr;
+    grid-template-rows: auto auto auto auto;
     gap: 0.75rem;
   }
 
-  .item-image {
-    width: 60px;
-    height: 60px;
+  .item-info {
+    grid-column: 2 / -1;
   }
 
   .item-qty {

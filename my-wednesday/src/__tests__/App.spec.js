@@ -10,6 +10,6 @@ describe('App', () => {
         stubs: { RouterLink: true, RouterView: true },
       },
     })
-    expect(wrapper.text()).toContain('Wednesday')
+    expect(wrapper.text()).toContain('Iran Situmorang')
   })
 })

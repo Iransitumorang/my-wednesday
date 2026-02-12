@@ -1,31 +1,57 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '../components/ProductCard.vue'
-import { getProductsByCategory } from '../data/products'
+import { getProductsByCategory, searchProducts } from '../data/products'
 
-const filter = ref('')
-const products = computed(() => getProductsByCategory(filter.value))
+const route = useRoute()
+const router = useRouter()
+const filter = ref(route.query.cat || '')
 const categories = ['', 'lifestyle', 'outerwear', 'accessories']
 const labels = { '': 'All', lifestyle: 'Lifestyle', outerwear: 'Outerwear', accessories: 'Accessories' }
+
+const products = computed(() => {
+  const byCat = getProductsByCategory(filter.value)
+  return searchProducts(route.query.q, byCat)
+})
+
+watch(
+  () => route.query.cat,
+  (cat) => {
+    filter.value = cat || ''
+  }
+)
+
+watch(
+  () => route.query.q,
+  (q) => {
+    if (q) filter.value = ''
+  }
+)
 </script>
 
 <template>
   <div class="shop">
     <div class="shop-header">
       <h1 class="page-title">Shop</h1>
+      <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
       <div class="filters">
         <button
           v-for="cat in categories"
           :key="cat || 'all'"
           class="filter-btn"
           :class="{ active: filter === cat }"
-          @click="filter = cat"
+          @click="
+            filter = cat;
+            router.push({ path: '/shop', query: { ...route.query, cat: cat || undefined } })
+          "
         >
           {{ labels[cat] }}
         </button>
       </div>
     </div>
-    <div class="product-grid">
+    <p v-if="!products.length" class="no-results">Tidak ada produk</p>
+    <div v-else class="product-grid">
       <ProductCard v-for="(p, i) in products" :key="p.id" :product="p" :index="i" />
     </div>
   </div>
@@ -88,10 +114,34 @@ const labels = { '': 'All', lifestyle: 'Lifestyle', outerwear: 'Outerwear', acce
   color: var(--bg);
 }
 
+.search-hint {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: -0.5rem 0 1rem 0;
+}
+
+.no-results {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 3rem;
+}
+
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 600px) {
@@ -101,6 +151,10 @@ const labels = { '': 'All', lifestyle: 'Lifestyle', outerwear: 'Outerwear', acce
 
   .page-title {
     font-size: 2rem;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
