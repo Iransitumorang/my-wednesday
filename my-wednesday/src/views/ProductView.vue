@@ -24,26 +24,11 @@ const requireAuth = (fn) => {
   fn()
 }
 
-const addAndGo = () => {
+const addAndCheckout = () => {
   if (!product.value) return
   requireAuth(() => {
     cart.add(product.value)
     router.push('/cart')
-  })
-}
-
-const addToCart = () => {
-  if (!product.value) return
-  requireAuth(() => cart.add(product.value))
-}
-
-const buyNow = () => {
-  if (!product.value) return
-  requireAuth(() => {
-    cart.clear()
-    cart.add(product.value)
-    cart.setCheckoutIds([product.value.id])
-    router.push('/checkout')
   })
 }
 </script>
@@ -65,9 +50,7 @@ const buyNow = () => {
         <p class="product-desc">{{ product.description }}</p>
         <p class="product-price">{{ product.price.toLocaleString('id-ID') }}</p>
         <div class="product-actions">
-          <button class="btn-buy" @click="buyNow">Buy Now</button>
-          <button class="btn-primary" @click="addAndGo">Add to Cart & Checkout</button>
-          <button class="btn-secondary" @click="addToCart">Add to Cart</button>
+          <button class="btn-primary" @click="addAndCheckout">Tambah ke Keranjang</button>
         </div>
       </div>
     </div>
@@ -221,48 +204,21 @@ const buyNow = () => {
   flex-wrap: wrap;
 }
 
-.btn-buy,
-.btn-primary,
-.btn-secondary {
-  padding: 0.9rem 1.5rem;
+.btn-primary {
+  padding: 0.9rem 2rem;
   border-radius: 10px;
   font-weight: 600;
   font-size: 0.95rem;
   cursor: pointer;
   transition: all 0.3s ease;
-}
-
-.btn-buy {
   background: var(--accent);
   color: var(--bg);
   border: none;
 }
 
-.btn-buy:hover {
+.btn-primary:hover {
   background: var(--accent-hover);
   transform: translateY(-2px);
-}
-
-.btn-primary {
-  background: rgba(201, 162, 39, 0.3);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-}
-
-.btn-primary:hover {
-  background: rgba(201, 162, 39, 0.4);
-  transform: translateY(-2px);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.btn-secondary:hover {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .product-detail {

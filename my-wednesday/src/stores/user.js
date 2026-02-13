@@ -41,7 +41,13 @@ export const useUserStore = defineStore('user', {
       }
       return TIERS[0]
     },
-    tierLabel: (state, getters) => getters.tier.label,
+    tierLabel: (state) => {
+      const count = state.purchaseCount
+      for (let i = TIERS.length - 1; i >= 0; i--) {
+        if (count >= TIERS[i].min) return TIERS[i].label
+      }
+      return TIERS[0].label
+    },
   },
   actions: {
     login(name = 'Iran Situmorang') {

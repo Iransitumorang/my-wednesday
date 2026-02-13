@@ -1,11 +1,13 @@
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useCartStore } from '../stores/cart'
 import { useUserStore } from '../stores/user'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 
 const cart = useCartStore()
 const user = useUserStore()
+const { isLoggedIn, name: userName, tierLabel } = storeToRefs(user)
 const router = useRouter()
 const route = useRoute()
 const searchQuery = ref(route.query.q || '')
@@ -33,6 +35,14 @@ const logout = () => {
 const closeMenu = (e) => {
   if (!e.target.closest('.user-wrap')) showUserMenu.value = false
 }
+
+const initials = computed(() => {
+  const n = (userName.value || '').trim()
+  if (!n) return '?'
+  const parts = n.split(/\s+/)
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+  return n.slice(0, 2).toUpperCase()
+})
 
 onMounted(() => {
   document.addEventListener('click', closeMenu)
@@ -65,12 +75,12 @@ onUnmounted(() => {
         <span class="cart-icon">🛒</span>
         <span v-if="cart.count" class="cart-badge">{{ cart.count }}</span>
       </RouterLink>
-      <RouterLink v-if="!user.isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
+      <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
       <div v-else class="user-wrap" @click="showUserMenu = !showUserMenu">
-        <div class="user-avatar">IS</div>
+        <div class="user-avatar">{{ initials }}</div>
         <div class="user-info">
-          <span class="user-name">{{ user.name }}</span>
-          <span class="user-role">{{ user.tierLabel }}</span>
+          <span class="user-name">{{ userName }}</span>
+          <span class="user-role">{{ tierLabel }}</span>
         </div>
         <Transition name="dropdown">
           <div v-if="showUserMenu" class="user-dropdown" @click.stop>
@@ -281,13 +291,19 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: 0.6rem;
+  padding: 0.35rem 0.85rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%);
+  border: 1px solid rgba(201, 162, 39, 0.25);
   border-radius: 12px;
   margin-left: 0.5rem;
   cursor: pointer;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.user-wrap:hover {
+  border-color: rgba(201, 162, 39, 0.45);
+  box-shadow: 0 0 20px rgba(201, 162, 39, 0.1);
 }
 
 .user-dropdown {

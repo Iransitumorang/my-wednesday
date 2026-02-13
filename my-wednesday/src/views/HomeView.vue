@@ -39,6 +39,14 @@ const slides = [
 const current = ref(0)
 let autoplayTimer
 
+const getAdjacentProducts = (i) => {
+  const n = slides.length
+  return {
+    prev: slides[(i - 1 + n) % n]?.product,
+    next: slides[(i + 1) % n]?.product,
+  }
+}
+
 const goTo = (i) => {
   current.value = i
   resetAutoplay()
@@ -59,6 +67,15 @@ const resetAutoplay = () => {
   autoplayTimer = setInterval(next, 5000)
 }
 
+const starfield = Array.from({ length: 80 }, (_, i) => ({
+  id: i,
+  x: (i * 13 + 7) % 100,
+  y: (i * 17 + 11) % 100,
+  size: (i % 3) + 1,
+  delay: (i % 20) * 0.2,
+  duration: 2 + (i % 3),
+}))
+
 onMounted(() => {
   autoplayTimer = setInterval(next, 5000)
 })
@@ -71,29 +88,67 @@ onUnmounted(() => {
 <template>
   <div class="home">
     <section class="hero">
+      <div class="hero-cosmic" aria-hidden="true">
+        <div class="starfield">
+          <span
+            v-for="s in starfield"
+            :key="s.id"
+            class="star"
+            :class="`star-${s.size}`"
+            :style="{
+              left: `${s.x}%`,
+              top: `${s.y}%`,
+              animationDelay: `${s.delay}s`,
+              animationDuration: `${s.duration}s`,
+            }"
+          />
+        </div>
+        <div class="cosmic-orbs">
+          <div class="orb orb-1" />
+          <div class="orb orb-2" />
+          <div class="orb orb-3" />
+        </div>
+        <div class="cosmic-dust" />
+      </div>
       <div class="hero-carousel">
         <div
           v-for="(slide, i) in slides"
           :key="i"
-          class="hero-slide"
+          class="hero-slide hero-slide-uniform"
           :class="{ active: current === i }"
         >
-          <div class="hero-content">
-            <h1 class="hero-title">
-              <span class="line">{{ slide.title }}</span>
-              <span class="line accent">{{ slide.titleAccent }}</span>
-            </h1>
-            <p class="hero-sub">{{ slide.sub }}</p>
-            <RouterLink :to="slide.link" class="hero-cta">{{ slide.cta }}</RouterLink>
-          </div>
           <div class="hero-visual">
-            <RouterLink
-              v-if="slide.product"
-              :to="{ name: 'product', params: { id: slide.product.id } }"
-              class="hero-product-img"
-            >
-              <img :src="slide.product.image" :alt="slide.product.name" />
-            </RouterLink>
+            <template v-if="slide.product">
+              <div class="hero-cards-stack">
+                <RouterLink
+                  v-if="getAdjacentProducts(i).prev"
+                  :to="{ name: 'product', params: { id: getAdjacentProducts(i).prev.id } }"
+                  class="hero-card hero-card-left"
+                >
+                  <img :src="getAdjacentProducts(i).prev.image" :alt="getAdjacentProducts(i).prev.name" />
+                </RouterLink>
+                <div class="hero-card hero-card-center has-caption">
+                  <RouterLink
+                    :to="{ name: 'product', params: { id: slide.product.id } }"
+                    class="hero-card-img"
+                  >
+                    <img :src="slide.product.image" :alt="slide.product.name" />
+                  </RouterLink>
+                  <div class="hero-card-caption">
+                    <h2 class="caption-title">{{ slide.title }} <span class="accent">{{ slide.titleAccent }}</span></h2>
+                    <p class="caption-sub">{{ slide.sub }}</p>
+                    <RouterLink :to="slide.link" class="caption-cta">{{ slide.cta }}</RouterLink>
+                  </div>
+                </div>
+                <RouterLink
+                  v-if="getAdjacentProducts(i).next"
+                  :to="{ name: 'product', params: { id: getAdjacentProducts(i).next.id } }"
+                  class="hero-card hero-card-right"
+                >
+                  <img :src="getAdjacentProducts(i).next.image" :alt="getAdjacentProducts(i).next.name" />
+                </RouterLink>
+              </div>
+            </template>
             <template v-else>
               <div class="floating-card card-1" />
               <div class="floating-card card-2" />
@@ -143,21 +198,157 @@ onUnmounted(() => {
 
 .hero {
   position: relative;
-  min-height: 90vh;
+  min-height: 92vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 6rem 4rem 4rem;
+  padding: 6rem 4rem 5rem;
   overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  height: 300px;
+  background: radial-gradient(ellipse at center, rgba(201, 162, 39, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-cosmic {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.starfield {
+  position: absolute;
+  inset: 0;
+}
+
+.star {
+  position: absolute;
+  background: #fff;
+  border-radius: 50%;
+  animation: twinkle ease-in-out infinite;
+  transform: translate(-50%, -50%);
+}
+
+.star-1 {
+  width: 2px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 6px 1px rgba(255, 255, 255, 0.6);
+}
+
+.star-2 {
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.7);
+}
+
+.star-3 {
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8), 0 0 20px 4px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.9); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.cosmic-orbs {
+  position: absolute;
+  inset: 0;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.15;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%);
+  top: -10%;
+  left: -5%;
+  animation: orbFloat1 18s ease-in-out infinite;
+}
+
+.orb-2 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.3) 0%, transparent 70%);
+  bottom: -15%;
+  right: -8%;
+  animation: orbFloat2 22s ease-in-out infinite;
+}
+
+.orb-3 {
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.2) 0%, transparent 70%);
+  top: 40%;
+  right: 10%;
+  animation: orbFloat3 20s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, -30px) scale(1.08); }
+  66% { transform: translate(25px, 20px) scale(0.92); }
+}
+
+@keyframes orbFloat3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-15px, -25px) scale(1.03); }
+}
+
+.cosmic-dust {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.03) 20%,
+    transparent 40%,
+    rgba(6, 182, 212, 0.02) 60%,
+    transparent 80%,
+    rgba(201, 162, 39, 0.02) 100%
+  );
+  animation: cosmicDust 12s ease-in-out infinite;
+}
+
+@keyframes cosmicDust {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .hero-carousel {
   position: relative;
+  z-index: 1;
   width: 100%;
-  max-width: 1200px;
+  max-width: 1280px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 4rem;
 }
 
@@ -166,11 +357,11 @@ onUnmounted(() => {
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 4rem;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.5s ease;
 }
 
 .hero-slide.active {
@@ -179,95 +370,206 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
-.hero-content {
-  flex: 1;
-  max-width: 520px;
+.hero-slide-uniform.active .hero-visual {
+  animation: cardZoomIn 0.6s ease-out;
 }
 
-.hero-title {
-  margin: 0 0 1rem 0;
-  font-size: 3.5rem;
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-
-.hero-title .line {
-  display: block;
-  animation: fadeUp 0.8s ease-out backwards;
-}
-
-.hero-slide.active .hero-title .line:nth-child(1) {
-  animation: fadeUp 0.6s ease-out forwards;
-}
-
-.hero-title .line.accent {
-  color: var(--accent);
-}
-
-.hero-slide.active .hero-title .line.accent {
-  animation: fadeUp 0.6s ease-out 0.15s backwards;
-}
-
-@keyframes fadeUp {
+@keyframes cardZoomIn {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: scale(0.92);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
-.hero-sub {
-  font-size: 1.15rem;
-  color: var(--text-muted);
-  margin: 0 0 2rem 0;
+.hero-slide-uniform {
+  justify-content: center;
 }
 
-.hero-cta {
-  display: inline-block;
-  padding: 0.9rem 2rem;
-  background: var(--accent);
-  color: var(--bg);
-  text-decoration: none;
-  font-weight: 600;
-  border-radius: 10px;
-  transition: transform 0.3s ease, background 0.3s ease;
+.hero-slide-uniform .hero-visual {
+  width: 600px;
+  height: 420px;
 }
 
-.hero-cta:hover {
-  background: var(--accent-hover);
-  transform: translateY(-2px);
+.hero-slide-uniform .hero-card-center {
+  width: 360px;
+  height: 400px;
+  margin-left: -180px;
+  margin-top: -200px;
+}
+
+.hero-slide-uniform .hero-card-left {
+  width: 150px;
+  height: 195px;
+  margin-top: -97px;
+}
+
+.hero-slide-uniform .hero-card-right {
+  width: 150px;
+  height: 195px;
+  margin-top: -97px;
+}
+
+.hero-slide-uniform .hero-card-center.has-caption .hero-card-img {
+  min-height: 220px;
 }
 
 .hero-visual {
   position: relative;
-  width: 380px;
-  height: 380px;
+  width: 560px;
+  height: 400px;
   flex-shrink: 0;
 }
 
-.hero-product-img {
-  display: block;
+.hero-cards-stack {
+  position: relative;
   width: 100%;
   height: 100%;
-  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-card {
+  position: absolute;
+  border-radius: 24px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
 }
 
-.hero-product-img:hover {
-  transform: scale(1.03);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-}
-
-.hero-product-img img {
+.hero-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.hero-card-left {
+  width: 140px;
+  height: 180px;
+  left: 0;
+  top: 50%;
+  margin-top: -90px;
+  z-index: 1;
+  transform: translateX(20%) scale(0.85) rotate(-3deg);
+}
+
+.hero-card-left:hover {
+  transform: translateX(10%) scale(0.95) rotate(-1deg);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 162, 39, 0.15);
+  z-index: 3;
+}
+
+.hero-card-right {
+  width: 140px;
+  height: 180px;
+  right: 0;
+  top: 50%;
+  margin-top: -90px;
+  z-index: 1;
+  transform: translateX(-20%) scale(0.85) rotate(3deg);
+}
+
+.hero-card-right:hover {
+  transform: translateX(-10%) scale(0.95) rotate(1deg);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 162, 39, 0.15);
+  z-index: 3;
+}
+
+.hero-card-center {
+  width: 320px;
+  height: 380px;
+  left: 50%;
+  top: 50%;
+  margin-left: -160px;
+  margin-top: -190px;
+  z-index: 2;
+  transform: scale(1);
+  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.hero-card-center:hover {
+  transform: scale(1.02);
+  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 162, 39, 0.2);
+}
+
+.hero-card-center .hero-card-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hero-card-center:not(.has-caption) .hero-card-img {
+  border-radius: 24px;
+}
+
+.hero-card-center.has-caption {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  background: rgba(30, 32, 45, 0.6);
+}
+
+.hero-card-center.has-caption .hero-card-img {
+  flex: 1;
+  min-height: 0;
+  border-radius: 24px 24px 0 0;
+}
+
+.hero-card-center .hero-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-card-caption {
+  padding: 1.35rem 1.6rem;
+  background: linear-gradient(180deg, rgba(20, 22, 32, 0.98) 0%, rgba(16, 18, 28, 0.98) 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.caption-title {
+  margin: 0 0 0.4rem 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.caption-title .accent {
+  color: var(--accent);
+  text-shadow: 0 0 24px rgba(201, 162, 39, 0.25);
+}
+
+.caption-sub {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.caption-cta {
+  display: inline-block;
+  padding: 0.7rem 1.5rem;
+  background: linear-gradient(135deg, var(--accent) 0%, #a88b1a 100%);
+  color: var(--bg);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(201, 162, 39, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.caption-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 24px rgba(201, 162, 39, 0.4);
 }
 
 .floating-card {
@@ -313,6 +615,7 @@ onUnmounted(() => {
 
 .carousel-controls {
   position: absolute;
+  z-index: 2;
   bottom: 2rem;
   left: 50%;
   transform: translateX(-50%);
@@ -322,13 +625,13 @@ onUnmounted(() => {
 }
 
 .carousel-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 50%;
   color: var(--text);
   font-size: 1.5rem;
@@ -340,6 +643,7 @@ onUnmounted(() => {
   background: var(--accent);
   border-color: var(--accent);
   color: var(--bg);
+  transform: scale(1.08);
 }
 
 .carousel-dots {
@@ -361,6 +665,7 @@ onUnmounted(() => {
 .dot.active {
   background: var(--accent);
   transform: scale(1.2);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.2);
 }
 
 .featured {
@@ -383,6 +688,17 @@ onUnmounted(() => {
   color: var(--text-muted);
   font-size: 1rem;
   margin: -0.5rem 0 2rem 0;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section-title {
@@ -428,17 +744,60 @@ onUnmounted(() => {
     flex-direction: column;
   }
 
-  .hero-content {
-    max-width: none;
-  }
-
   .hero-visual {
-    width: 280px;
-    height: 280px;
+    width: 100%;
+    max-width: 380px;
+    height: 320px;
   }
 
-  .hero-title {
-    font-size: 2.5rem;
+  .hero-slide-uniform .hero-visual {
+    max-width: 400px;
+    height: 360px;
+  }
+
+  .hero-slide-uniform .hero-card-center {
+    width: 280px;
+    height: 320px;
+    margin-left: -140px;
+    margin-top: -160px;
+  }
+
+  .hero-card-left,
+  .hero-card-right {
+    width: 100px;
+    height: 130px;
+  }
+
+  .hero-slide-uniform .hero-card-left,
+  .hero-slide-uniform .hero-card-right {
+    width: 110px;
+    height: 145px;
+    margin-top: -72px;
+  }
+
+  .hero-card-left {
+    transform: translateX(30%) scale(0.8) rotate(-5deg);
+  }
+
+  .hero-card-right {
+    transform: translateX(-30%) scale(0.8) rotate(5deg);
+  }
+
+  .hero-card-center {
+    width: 260px;
+    height: 300px;
+  }
+
+  .hero-card-center.has-caption .hero-card-caption {
+    padding: 1rem 1.25rem;
+  }
+
+  .hero-slide-uniform .hero-card-center.has-caption .hero-card-img {
+    min-height: 160px;
+  }
+
+  .caption-title {
+    font-size: 1.25rem;
   }
 
   .featured,
