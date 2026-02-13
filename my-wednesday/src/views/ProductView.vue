@@ -45,7 +45,9 @@ const addAndCheckout = () => {
         <h1 class="product-title">{{ product.name }}</h1>
         <div v-if="product.rating" class="product-meta">
           <span class="product-rating">{{ stars(product.rating) }}</span>
-          <span class="product-sold">{{ (product.soldCount || 0).toLocaleString('id-ID') }} terjual</span>
+          <span class="product-sold"
+            >{{ (product.soldCount || 0).toLocaleString('id-ID') }} terjual</span
+          >
         </div>
         <p class="product-desc">{{ product.description }}</p>
         <p class="product-price">{{ product.price.toLocaleString('id-ID') }}</p>
@@ -65,11 +67,7 @@ const addAndCheckout = () => {
         <p v-if="!user.isLoggedIn" class="review-login-hint">Login untuk memberi penilaian</p>
         <Transition name="reveal">
           <div v-if="showReviews && product.reviews?.length" class="reviews-list">
-            <div
-              v-for="(r, i) in product.reviews"
-              :key="i"
-              class="review-item"
-            >
+            <div v-for="(r, i) in product.reviews" :key="i" class="review-item">
               <div class="review-header">
                 <span class="review-name">{{ r.name }}</span>
                 <span class="review-stars">{{ stars(r.rating) }}</span>

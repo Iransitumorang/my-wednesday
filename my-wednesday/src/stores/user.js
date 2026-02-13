@@ -23,7 +23,6 @@ const saveToStorage = (data) => {
   } catch (_) {}
 }
 
-
 export const useUserStore = defineStore('user', {
   state: () => {
     const stored = loadFromStorage()

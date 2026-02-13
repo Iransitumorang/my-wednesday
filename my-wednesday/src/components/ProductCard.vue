@@ -24,7 +24,9 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
       <h3 class="card-title">{{ product.name }}</h3>
       <div v-if="product.rating" class="card-meta">
         <span class="card-rating">{{ stars(product.rating) }}</span>
-        <span class="card-sold">{{ (product.soldCount || 0).toLocaleString('id-ID') }} terjual</span>
+        <span class="card-sold"
+          >{{ (product.soldCount || 0).toLocaleString('id-ID') }} terjual</span
+        >
       </div>
       <p class="card-price">{{ product.price.toLocaleString('id-ID') }}</p>
     </div>
@@ -40,7 +42,8 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
     box-shadow 0.4s ease,
     border-color 0.3s ease;
   animation: cardReveal 0.6s ease-out backwards;
