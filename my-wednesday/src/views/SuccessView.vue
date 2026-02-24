@@ -1,25 +1,33 @@
 <script setup>
 import { computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
-const route = useRoute()
+const booking = computed(() => history.state?.booking)
+const customerName = computed(() => history.state?.customerName || booking.value?.customerName)
 
-const customer = computed(() => route.params.customer || history.state?.customer || {})
-
-const goShop = () => router.push('/shop')
+const goHotels = () => router.push('/hotels')
+const goBookings = () => router.push('/bookings')
 </script>
 
 <template>
   <div class="success-page">
     <div class="success-card">
       <div class="success-icon">✓</div>
-      <h1 class="success-title">Pembayaran Berhasil</h1>
-      <p class="success-msg">Terima kasih atas pembelian Anda. Pesanan akan diproses segera.</p>
-      <template v-if="customer?.nama">
-        <p class="success-detail">Konfirmasi akan dikirim ke <strong>{{ customer.email }}</strong></p>
+      <h1 class="success-title">Booking Berhasil</h1>
+      <p class="success-msg">Terima kasih. Reservasi kamar Anda telah dikonfirmasi.</p>
+      <template v-if="booking">
+        <p class="success-detail">
+          No. Booking: <strong>#{{ booking.id }}</strong>
+        </p>
+        <p v-if="customerName" class="success-detail">
+          Pemesan: {{ customerName }}
+        </p>
       </template>
-      <button class="btn-continue" @click="goShop">Lanjut Belanja</button>
+      <div class="success-actions">
+        <button class="btn-continue" @click="goBookings">Lihat Booking Saya</button>
+        <button class="btn-secondary" @click="goHotels">Cari Hotel Lain</button>
+      </div>
     </div>
   </div>
 </template>
@@ -84,7 +92,14 @@ const goShop = () => router.push('/shop')
 .success-detail {
   font-size: 0.9rem;
   color: var(--text-muted);
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 0.5rem 0;
+}
+
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
 }
 
 .btn-continue {
@@ -102,5 +117,22 @@ const goShop = () => router.push('/shop')
 .btn-continue:hover {
   background: var(--accent-hover);
   transform: translateY(-2px);
+}
+
+.btn-secondary {
+  padding: 0.7rem 1.5rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 </style>

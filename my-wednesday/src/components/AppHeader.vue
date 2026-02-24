@@ -1,11 +1,9 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useCartStore } from '../stores/cart'
 import { useUserStore } from '../stores/user'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 
-const cart = useCartStore()
 const user = useUserStore()
 const { isLoggedIn, name: userName, tierLabel } = storeToRefs(user)
 const router = useRouter()
@@ -15,16 +13,14 @@ const showUserMenu = ref(false)
 
 watch(
   () => route.query.q,
-  (q) => {
-    searchQuery.value = q || ''
-  }
+  (q) => { searchQuery.value = q || '' }
 )
 
 const onSearch = (e) => {
   e?.preventDefault()
   const q = searchQuery.value.trim()
-  if (q) router.push({ path: '/shop', query: { q } })
-  else router.push('/shop')
+  if (q) router.push({ path: '/hotels', query: { q } })
+  else router.push('/hotels')
 }
 
 const logout = () => {
@@ -62,19 +58,16 @@ onUnmounted(() => {
       <input
         v-model="searchQuery"
         type="search"
-        placeholder="Cari produk..."
+        placeholder="Cari hotel..."
         class="search-input"
-        aria-label="Cari produk"
+        aria-label="Cari hotel"
       />
       <button type="submit" class="search-btn" aria-label="Cari">🔍</button>
     </form>
     <nav class="nav">
       <RouterLink to="/" class="nav-link" active-class="active">Home</RouterLink>
-      <RouterLink to="/shop" class="nav-link" active-class="active">Shop</RouterLink>
-      <RouterLink to="/cart" class="nav-link cart-link" active-class="active">
-        <span class="cart-icon">🛒</span>
-        <span v-if="cart.count" class="cart-badge">{{ cart.count }}</span>
-      </RouterLink>
+      <RouterLink to="/hotels" class="nav-link" active-class="active">Hotel</RouterLink>
+      <RouterLink to="/bookings" class="nav-link" active-class="active">Booking Saya</RouterLink>
       <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
       <div v-else class="user-wrap" @click="showUserMenu = !showUserMenu">
         <div class="user-avatar">{{ initials }}</div>
@@ -242,35 +235,6 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.cart-link {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.cart-icon {
-  font-size: 1.1rem;
-}
-
-.cart-badge {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: var(--bg);
-  background: var(--accent);
-  border-radius: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: popIn 0.4s ease-out;
-}
-
 .btn-login {
   padding: 0.5rem 1rem;
   background: var(--accent);
@@ -377,20 +341,6 @@ onUnmounted(() => {
 .user-role {
   font-size: 0.7rem;
   color: var(--text-muted);
-}
-
-@keyframes popIn {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
 }
 
 @media (max-width: 768px) {

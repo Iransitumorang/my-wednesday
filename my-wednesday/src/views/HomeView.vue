@@ -1,51 +1,21 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
-import ProductCard from '../components/ProductCard.vue'
-import { products, getBestSellers } from '../data/products'
+import HotelCard from '../components/HotelCard.vue'
+import { getHotels } from '../api/booking'
 
-const featured = products.slice(0, 3)
-const bestSellers = getBestSellers().slice(0, 4)
-
-const carouselProducts = products.slice(0, 3)
+const hotels = ref([])
+const loading = ref(true)
+const error = ref(null)
 
 const slides = [
-  {
-    title: 'Curated',
-    titleAccent: 'Essentials',
-    sub: 'Koleksi pilihan untuk gaya hidup minimalis',
-    cta: 'Explore Collection',
-    link: '/shop',
-    product: carouselProducts[0],
-  },
-  {
-    title: 'New',
-    titleAccent: 'Arrivals',
-    sub: 'Temukan produk terbaru setiap minggu',
-    cta: 'Lihat Koleksi',
-    link: '/shop',
-    product: carouselProducts[1],
-  },
-  {
-    title: 'Best',
-    titleAccent: 'Sellers',
-    sub: 'Produk paling diminati pelanggan',
-    cta: 'Beli Sekarang',
-    link: '/shop',
-    product: carouselProducts[2],
-  },
+  { title: 'Temukan', titleAccent: 'Hotel', sub: 'Pilih hotel favorit untuk menginap', cta: 'Lihat Hotel', link: '/hotels' },
+  { title: 'Pesan', titleAccent: 'Kamar', sub: 'Cek ketersediaan dan booking dengan mudah', cta: 'Cari Hotel', link: '/hotels' },
+  { title: 'Nikmati', titleAccent: 'Liburan', sub: 'Konfirmasi booking dan siap menginap', cta: 'Booking Saya', link: '/bookings' },
 ]
 
 const current = ref(0)
 let autoplayTimer
-
-const getAdjacentProducts = (i) => {
-  const n = slides.length
-  return {
-    prev: slides[(i - 1 + n) % n]?.product,
-    next: slides[(i + 1) % n]?.product,
-  }
-}
 
 const goTo = (i) => {
   current.value = i
@@ -76,8 +46,15 @@ const starfield = Array.from({ length: 80 }, (_, i) => ({
   duration: 2 + (i % 3),
 }))
 
-onMounted(() => {
+onMounted(async () => {
   autoplayTimer = setInterval(next, 5000)
+  try {
+    hotels.value = await getHotels(0, 6)
+  } catch (e) {
+    error.value = e.message || 'Gagal memuat hotel'
+  } finally {
+    loading.value = false
+  }
 })
 
 onUnmounted(() => {
@@ -118,42 +95,11 @@ onUnmounted(() => {
           :class="{ active: current === i }"
         >
           <div class="hero-visual">
-            <template v-if="slide.product">
-              <div class="hero-cards-stack">
-                <RouterLink
-                  v-if="getAdjacentProducts(i).prev"
-                  :to="{ name: 'product', params: { id: getAdjacentProducts(i).prev.id } }"
-                  class="hero-card hero-card-left"
-                >
-                  <img :src="getAdjacentProducts(i).prev.image" :alt="getAdjacentProducts(i).prev.name" />
-                </RouterLink>
-                <div class="hero-card hero-card-center has-caption">
-                  <RouterLink
-                    :to="{ name: 'product', params: { id: slide.product.id } }"
-                    class="hero-card-img"
-                  >
-                    <img :src="slide.product.image" :alt="slide.product.name" />
-                  </RouterLink>
-                  <div class="hero-card-caption">
-                    <h2 class="caption-title">{{ slide.title }} <span class="accent">{{ slide.titleAccent }}</span></h2>
-                    <p class="caption-sub">{{ slide.sub }}</p>
-                    <RouterLink :to="slide.link" class="caption-cta">{{ slide.cta }}</RouterLink>
-                  </div>
-                </div>
-                <RouterLink
-                  v-if="getAdjacentProducts(i).next"
-                  :to="{ name: 'product', params: { id: getAdjacentProducts(i).next.id } }"
-                  class="hero-card hero-card-right"
-                >
-                  <img :src="getAdjacentProducts(i).next.image" :alt="getAdjacentProducts(i).next.name" />
-                </RouterLink>
-              </div>
-            </template>
-            <template v-else>
-              <div class="floating-card card-1" />
-              <div class="floating-card card-2" />
-              <div class="floating-card card-3" />
-            </template>
+            <div class="hero-content">
+              <h2 class="caption-title">{{ slide.title }} <span class="accent">{{ slide.titleAccent }}</span></h2>
+              <p class="caption-sub">{{ slide.sub }}</p>
+              <RouterLink :to="slide.link" class="caption-cta">{{ slide.cta }}</RouterLink>
+            </div>
           </div>
         </div>
       </div>
@@ -174,19 +120,13 @@ onUnmounted(() => {
     </section>
 
     <section class="featured">
-      <h2 class="section-title">Featured</h2>
-      <div class="product-grid">
-        <ProductCard v-for="(p, i) in featured" :key="p.id" :product="p" :index="i" />
+      <h2 class="section-title">Hotel Tersedia</h2>
+      <p v-if="error" class="section-error">{{ error }}</p>
+      <div v-else-if="loading" class="section-loading">Memuat...</div>
+      <div v-else class="product-grid">
+        <HotelCard v-for="(h, i) in hotels" :key="h.id" :hotel="h" :index="i" />
       </div>
-      <RouterLink to="/shop" class="section-link">View All</RouterLink>
-    </section>
-    <section class="bestsellers">
-      <h2 class="section-title">Paling Laris Bulan Ini</h2>
-      <p class="section-sub">Produk terpopuler yang dipilih pelanggan</p>
-      <div class="product-grid">
-        <ProductCard v-for="(p, i) in bestSellers" :key="p.id" :product="p" :index="i" />
-      </div>
-      <RouterLink to="/shop" class="section-link">Lihat Semua</RouterLink>
+      <RouterLink v-if="!loading && !error" to="/hotels" class="section-link">Lihat Semua</RouterLink>
     </section>
   </div>
 </template>
@@ -204,19 +144,6 @@ onUnmounted(() => {
   justify-content: center;
   padding: 6rem 4rem 5rem;
   overflow: hidden;
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 800px;
-  height: 300px;
-  background: radial-gradient(ellipse at center, rgba(201, 162, 39, 0.08) 0%, transparent 70%);
-  pointer-events: none;
 }
 
 .hero-cosmic {
@@ -349,7 +276,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4rem;
 }
 
 .hero-slide {
@@ -358,7 +284,6 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4rem;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.5s ease;
@@ -370,173 +295,14 @@ onUnmounted(() => {
   pointer-events: auto;
 }
 
-.hero-slide-uniform.active .hero-visual {
-  animation: cardZoomIn 0.6s ease-out;
-}
-
-@keyframes cardZoomIn {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.hero-slide-uniform {
-  justify-content: center;
-}
-
-.hero-slide-uniform .hero-visual {
-  width: 600px;
-  height: 420px;
-}
-
-.hero-slide-uniform .hero-card-center {
-  width: 360px;
-  height: 400px;
-  margin-left: -180px;
-  margin-top: -200px;
-}
-
-.hero-slide-uniform .hero-card-left {
-  width: 150px;
-  height: 195px;
-  margin-top: -97px;
-}
-
-.hero-slide-uniform .hero-card-right {
-  width: 150px;
-  height: 195px;
-  margin-top: -97px;
-}
-
-.hero-slide-uniform .hero-card-center.has-caption .hero-card-img {
-  min-height: 220px;
-}
-
-.hero-visual {
-  position: relative;
-  width: 560px;
-  height: 400px;
-  flex-shrink: 0;
-}
-
-.hero-cards-stack {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.hero-card {
-  position: absolute;
-  border-radius: 24px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
-}
-
-.hero-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hero-card-left {
-  width: 140px;
-  height: 180px;
-  left: 0;
-  top: 50%;
-  margin-top: -90px;
-  z-index: 1;
-  transform: translateX(20%) scale(0.85) rotate(-3deg);
-}
-
-.hero-card-left:hover {
-  transform: translateX(10%) scale(0.95) rotate(-1deg);
-  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 162, 39, 0.15);
-  z-index: 3;
-}
-
-.hero-card-right {
-  width: 140px;
-  height: 180px;
-  right: 0;
-  top: 50%;
-  margin-top: -90px;
-  z-index: 1;
-  transform: translateX(-20%) scale(0.85) rotate(3deg);
-}
-
-.hero-card-right:hover {
-  transform: translateX(-10%) scale(0.95) rotate(1deg);
-  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(201, 162, 39, 0.15);
-  z-index: 3;
-}
-
-.hero-card-center {
-  width: 320px;
-  height: 380px;
-  left: 50%;
-  top: 50%;
-  margin-left: -160px;
-  margin-top: -190px;
-  z-index: 2;
-  transform: scale(1);
-  box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-.hero-card-center:hover {
-  transform: scale(1.02);
-  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(201, 162, 39, 0.2);
-}
-
-.hero-card-center .hero-card-img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.hero-card-center:not(.has-caption) .hero-card-img {
-  border-radius: 24px;
-}
-
-.hero-card-center.has-caption {
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  background: rgba(30, 32, 45, 0.6);
-}
-
-.hero-card-center.has-caption .hero-card-img {
-  flex: 1;
-  min-height: 0;
-  border-radius: 24px 24px 0 0;
-}
-
-.hero-card-center .hero-card-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.hero-card-caption {
-  padding: 1.35rem 1.6rem;
-  background: linear-gradient(180deg, rgba(20, 22, 32, 0.98) 0%, rgba(16, 18, 28, 0.98) 100%);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  flex-shrink: 0;
+.hero-content {
+  text-align: center;
+  padding: 2rem;
 }
 
 .caption-title {
-  margin: 0 0 0.4rem 0;
-  font-size: 1.6rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 2.5rem;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.02em;
@@ -548,9 +314,9 @@ onUnmounted(() => {
 }
 
 .caption-sub {
-  font-size: 0.92rem;
+  font-size: 1.1rem;
   color: var(--text-muted);
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.5rem 0;
   line-height: 1.4;
 }
 
@@ -570,47 +336,6 @@ onUnmounted(() => {
 .caption-cta:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 24px rgba(201, 162, 39, 0.4);
-}
-
-.floating-card {
-  position: absolute;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  animation: float 6s ease-in-out infinite;
-}
-
-.card-1 {
-  width: 140px;
-  height: 140px;
-  top: 20%;
-  right: 10%;
-  animation-delay: 0s;
-}
-
-.card-2 {
-  width: 100px;
-  height: 100px;
-  bottom: 25%;
-  left: 5%;
-  animation-delay: -2s;
-}
-
-.card-3 {
-  width: 80px;
-  height: 80px;
-  top: 50%;
-  left: 30%;
-  animation-delay: -4s;
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-20px) rotate(3deg);
-  }
 }
 
 .carousel-controls {
@@ -672,41 +397,23 @@ onUnmounted(() => {
   padding: 5rem 4rem 4rem;
 }
 
-.bestsellers {
-  padding: 4rem 4rem 6rem;
-}
-
-.bestsellers .product-grid {
-  grid-template-columns: repeat(4, 1fr);
-}
-
-.bestsellers .section-link {
-  margin-top: 0.5rem;
-}
-
-.section-sub {
-  color: var(--text-muted);
-  font-size: 1rem;
-  margin: -0.5rem 0 2rem 0;
-}
-
-@keyframes fadeUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .section-title {
   font-size: 2rem;
   font-weight: 700;
   margin: 0 0 2.5rem 0;
   color: var(--text);
   animation: fadeUp 0.6s ease-out;
+}
+
+.section-error,
+.section-loading {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .product-grid {
@@ -735,85 +442,17 @@ onUnmounted(() => {
     padding: 5rem 1.5rem 5rem;
   }
 
-  .hero-carousel {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .hero-slide {
-    flex-direction: column;
-  }
-
-  .hero-visual {
-    width: 100%;
-    max-width: 380px;
-    height: 320px;
-  }
-
-  .hero-slide-uniform .hero-visual {
-    max-width: 400px;
-    height: 360px;
-  }
-
-  .hero-slide-uniform .hero-card-center {
-    width: 280px;
-    height: 320px;
-    margin-left: -140px;
-    margin-top: -160px;
-  }
-
-  .hero-card-left,
-  .hero-card-right {
-    width: 100px;
-    height: 130px;
-  }
-
-  .hero-slide-uniform .hero-card-left,
-  .hero-slide-uniform .hero-card-right {
-    width: 110px;
-    height: 145px;
-    margin-top: -72px;
-  }
-
-  .hero-card-left {
-    transform: translateX(30%) scale(0.8) rotate(-5deg);
-  }
-
-  .hero-card-right {
-    transform: translateX(-30%) scale(0.8) rotate(5deg);
-  }
-
-  .hero-card-center {
-    width: 260px;
-    height: 300px;
-  }
-
-  .hero-card-center.has-caption .hero-card-caption {
-    padding: 1rem 1.25rem;
-  }
-
-  .hero-slide-uniform .hero-card-center.has-caption .hero-card-img {
-    min-height: 160px;
-  }
-
-  .caption-title {
-    font-size: 1.25rem;
-  }
-
-  .featured,
-  .bestsellers {
-    padding: 3rem 1.5rem 4rem;
-  }
-
-  .product-grid,
-  .bestsellers .product-grid {
+  .product-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .featured {
+    padding: 3rem 1.5rem 4rem;
   }
 }
 
 @media (max-width: 500px) {
-  .product-grid,
-  .bestsellers .product-grid {
+  .product-grid {
     grid-template-columns: 1fr;
   }
 }

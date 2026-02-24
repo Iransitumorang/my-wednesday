@@ -1,0 +1,126 @@
+<script setup>
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import HotelCard from '../components/HotelCard.vue'
+import { getHotels } from '../api/booking'
+
+const route = useRoute()
+const router = useRouter()
+const hotels = ref([])
+const loading = ref(true)
+const error = ref(null)
+
+const searchQuery = ref(route.query.q || '')
+
+const filteredHotels = computed(() => {
+  const q = searchQuery.value?.trim().toLowerCase()
+  if (!q) return hotels.value
+  return hotels.value.filter(
+    (h) =>
+      h.name?.toLowerCase().includes(q) ||
+      h.location?.toLowerCase().includes(q)
+  )
+})
+
+watch(
+  () => route.query.q,
+  (q) => { searchQuery.value = q || '' }
+)
+
+const loadHotels = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    hotels.value = await getHotels(0, 50)
+  } catch (e) {
+    error.value = e.message || 'Gagal memuat hotel'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadHotels)
+</script>
+
+<template>
+  <div class="shop">
+    <div class="shop-header">
+      <h1 class="page-title">Hotel</h1>
+      <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
+    </div>
+    <p v-if="error" class="no-results">{{ error }}</p>
+    <p v-else-if="loading" class="no-results">Memuat...</p>
+    <p v-else-if="!filteredHotels.length" class="no-results">Tidak ada hotel</p>
+    <div v-else class="product-grid">
+      <HotelCard v-for="(h, i) in filteredHotels" :key="h.id" :hotel="h" :index="i" />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.shop {
+  padding: 7rem 4rem 4rem;
+  min-height: 100vh;
+}
+
+.shop-header {
+  margin-bottom: 3rem;
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin: 0 0 1.5rem 0;
+  color: var(--text);
+  animation: fadeUp 0.5s ease-out;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.search-hint {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin: -0.5rem 0 1rem 0;
+}
+
+.no-results {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 3rem;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 1200px) {
+  .product-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .shop {
+    padding: 6rem 1rem 3rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .product-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

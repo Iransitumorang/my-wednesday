@@ -1,40 +1,32 @@
 <script setup>
 import { RouterLink } from 'vue-router'
-import ProductImage from './ProductImage.vue'
 
 defineProps({
-  product: { type: Object, required: true },
+  hotel: { type: Object, required: true },
   index: { type: Number, default: 0 },
 })
 
-const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r))
+const hotelImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=300&fit=crop'
 </script>
 
 <template>
   <RouterLink
-    :to="{ name: 'product', params: { id: product.id } }"
-    class="product-card"
+    :to="{ name: 'hotel', params: { id: hotel.id } }"
+    class="hotel-card"
     :style="{ '--delay': `${index * 0.08}s` }"
   >
     <div class="card-image-wrap">
-      <ProductImage :src="product.image" :alt="product.name" img-class="card-image" />
+      <img :src="hotelImage" :alt="hotel.name" class="card-image" />
     </div>
     <div class="card-body">
-      <span class="card-category">{{ product.category }}</span>
-      <h3 class="card-title">{{ product.name }}</h3>
-      <div v-if="product.rating" class="card-meta">
-        <span class="card-rating">{{ stars(product.rating) }}</span>
-        <span class="card-sold"
-          >{{ (product.soldCount || 0).toLocaleString('id-ID') }} terjual</span
-        >
-      </div>
-      <p class="card-price">{{ product.price.toLocaleString('id-ID') }}</p>
+      <span class="card-location">{{ hotel.location }}</span>
+      <h3 class="card-title">{{ hotel.name }}</h3>
     </div>
   </RouterLink>
 </template>
 
 <style scoped>
-.product-card {
+.hotel-card {
   display: block;
   text-decoration: none;
   color: inherit;
@@ -50,7 +42,7 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
   animation-delay: var(--delay);
 }
 
-.product-card:hover {
+.hotel-card:hover {
   transform: translateY(-8px) scale(1.02);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
   border-color: rgba(255, 255, 255, 0.1);
@@ -69,7 +61,7 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
 
 .card-image-wrap {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 4/3;
   overflow: hidden;
 }
 
@@ -80,7 +72,7 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
   transition: transform 0.5s ease;
 }
 
-.product-card:hover .card-image {
+.hotel-card:hover .card-image {
   transform: scale(1.08);
 }
 
@@ -88,7 +80,7 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
   padding: 1.25rem;
 }
 
-.card-category {
+.card-location {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -100,30 +92,7 @@ const stars = (r) => '★'.repeat(Math.floor(r)) + '☆'.repeat(5 - Math.floor(r
 .card-title {
   font-size: 1.1rem;
   font-weight: 600;
-  margin: 0 0 0.4rem 0;
-  color: var(--text);
-}
-
-.card-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.8rem;
-  margin-bottom: 0.5rem;
-}
-
-.card-rating {
-  color: #fbbf24;
-}
-
-.card-sold {
-  color: var(--text-muted);
-}
-
-.card-price {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-muted);
   margin: 0;
+  color: var(--text);
 }
 </style>

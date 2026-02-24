@@ -7,20 +7,14 @@ import { RouterLink } from 'vue-router'
     <div class="footer-inner">
       <div class="footer-brand">
         <RouterLink to="/" class="footer-logo">Iran Situmorang</RouterLink>
-        <p class="footer-tagline">Curated essentials untuk gaya hidup minimalis</p>
+        <p class="footer-tagline">Hotel booking sederhana untuk reservasi kamar</p>
       </div>
       <div class="footer-links">
         <div class="footer-col">
           <h4>Navigasi</h4>
           <RouterLink to="/">Home</RouterLink>
-          <RouterLink to="/shop">Shop</RouterLink>
-          <RouterLink to="/cart">Keranjang</RouterLink>
-        </div>
-        <div class="footer-col">
-          <h4>Kategori</h4>
-          <RouterLink to="/shop?cat=lifestyle">Lifestyle</RouterLink>
-          <RouterLink to="/shop?cat=outerwear">Outerwear</RouterLink>
-          <RouterLink to="/shop?cat=accessories">Accessories</RouterLink>
+          <RouterLink to="/hotels">Hotel</RouterLink>
+          <RouterLink to="/bookings">Booking Saya</RouterLink>
         </div>
         <div class="footer-col">
           <h4>Kontak</h4>

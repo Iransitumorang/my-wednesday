@@ -7,7 +7,14 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  server: { port: 3000 },
+  server: {
+    port: 3000,
+    proxy: {
+      '/hotels': { target: 'http://localhost:8080', changeOrigin: true },
+      '/rooms': { target: 'http://localhost:8080', changeOrigin: true },
+      '/bookings': { target: 'http://localhost:8080', changeOrigin: true },
+    },
+  },
   plugins: [vue(), vueJsx(), vueDevTools()],
   resolve: {
     alias: {
