@@ -45,3 +45,17 @@ export const getBookings = (customerName, page = 0, size = 20) => {
 }
 export const getBooking = (id) => fetchApi(`/bookings/${id}`)
 export const cancelBooking = (id) => fetchApi(`/bookings/${id}/cancel`, { method: 'PUT' })
+
+export const createHotel = (body) =>
+  fetchApi('/hotels', { method: 'POST', body: JSON.stringify(body) })
+export const updateHotel = (id, body) =>
+  fetchApi(`/hotels/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+export const deleteHotel = (id) =>
+  fetchApi(`/hotels/${id}`, { method: 'DELETE' })
+
+export const createRoom = (body) =>
+  fetchApi('/rooms', { method: 'POST', body: JSON.stringify(body) })
+export const updateRoom = (id, body) =>
+  fetchApi(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+export const deleteRoom = (id) =>
+  fetchApi(`/rooms/${id}`, { method: 'DELETE' })

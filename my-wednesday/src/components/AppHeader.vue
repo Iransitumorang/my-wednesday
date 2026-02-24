@@ -68,6 +68,7 @@ onUnmounted(() => {
       <RouterLink to="/" class="nav-link" active-class="active">Home</RouterLink>
       <RouterLink to="/hotels" class="nav-link" active-class="active">Hotel</RouterLink>
       <RouterLink to="/bookings" class="nav-link" active-class="active">Booking Saya</RouterLink>
+      <RouterLink to="/admin/hotels" class="nav-link" active-class="active">Admin</RouterLink>
       <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
       <div v-else class="user-wrap" @click="showUserMenu = !showUserMenu">
         <div class="user-avatar">{{ initials }}</div>

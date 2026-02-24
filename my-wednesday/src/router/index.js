@@ -10,6 +10,8 @@ const router = createRouter({
     { path: '/bookings', name: 'bookings', component: () => import('../views/BookingsView.vue'), meta: { transition: 'slide' } },
     { path: '/success', name: 'success', component: () => import('../views/SuccessView.vue'), meta: { transition: 'fade' } },
     { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { transition: 'fade' } },
+    { path: '/admin/hotels', name: 'admin-hotels', component: () => import('../views/AdminHotelsView.vue'), meta: { transition: 'slide' } },
+    { path: '/admin/hotels/:id/rooms', name: 'admin-rooms', component: () => import('../views/AdminHotelRoomsView.vue'), meta: { transition: 'slide' } },
   ],
 })
 

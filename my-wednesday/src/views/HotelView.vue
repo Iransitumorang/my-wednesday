@@ -10,6 +10,7 @@ const hotel = ref(null)
 const rooms = ref([])
 const loading = ref(true)
 const error = ref(null)
+const roomsError = ref(null)
 
 const checkIn = ref('')
 const checkOut = ref('')
@@ -17,24 +18,38 @@ const availabilityMap = ref({})
 
 const roomAvailability = computed(() => {
   const map = {}
-  rooms.value.forEach((r) => {
-    map[r.id] = availabilityMap.value[r.id] ?? true
+  ;(rooms.value || []).forEach((r) => {
+    if (r?.id != null) map[r.id] = availabilityMap.value[r.id] ?? true
   })
   return map
 })
 
 const loadData = async () => {
+  const id = route.params.id
+  if (!id) return
   loading.value = true
   error.value = null
+  roomsError.value = null
+  hotel.value = null
+  rooms.value = []
   try {
-    const [h, r] = await Promise.all([
-      getHotel(route.params.id),
-      getHotelRooms(route.params.id),
+    const [hotelRes, roomsRes] = await Promise.allSettled([
+      getHotel(id),
+      getHotelRooms(id),
     ])
-    hotel.value = h
-    rooms.value = r || []
+    if (hotelRes.status === 'fulfilled' && hotelRes.value) {
+      hotel.value = hotelRes.value
+    } else {
+      error.value = hotelRes.reason?.message || 'Hotel tidak ditemukan'
+    }
+    if (roomsRes.status === 'fulfilled') {
+      rooms.value = Array.isArray(roomsRes.value) ? roomsRes.value : []
+    } else {
+      roomsError.value = roomsRes.reason?.message || 'Gagal memuat kamar'
+      rooms.value = []
+    }
   } catch (e) {
-    error.value = e.message || 'Gagal memuat data'
+    error.value = e?.message || 'Gagal memuat data'
   } finally {
     loading.value = false
   }
@@ -59,6 +74,8 @@ watch(
   () => { checkAvailability() },
   { deep: true }
 )
+
+watch(() => route.params.id, loadData)
 
 const onBook = (room) => {
   router.push({
@@ -95,7 +112,7 @@ onMounted(loadData)
       </div>
     </div>
     <h2 class="rooms-title">Kamar Tersedia</h2>
-    <p v-if="error" class="error-msg">{{ error }}</p>
+    <p v-if="roomsError" class="error-msg">{{ roomsError }}</p>
     <div v-else class="room-grid">
       <RoomCard
         v-for="(r, i) in rooms"
@@ -107,9 +124,12 @@ onMounted(loadData)
       />
     </div>
   </div>
-  <div v-else-if="loading" class="loading-msg">Memuat...</div>
-  <div v-else class="not-found">
+  <div v-else-if="loading" class="page-state loading-state">
+    <p class="loading-msg">Memuat...</p>
+  </div>
+  <div v-else class="page-state not-found">
     <h2>Hotel tidak ditemukan</h2>
+    <p v-if="error" class="error-msg">{{ error }}</p>
     <button @click="router.push('/hotels')">Kembali ke Hotel</button>
   </div>
 </template>
@@ -184,10 +204,23 @@ onMounted(loadData)
   color: var(--text);
 }
 
-.error-msg,
-.loading-msg {
-  color: var(--text-muted);
+.error-msg {
+  color: #ff6b6b;
   margin-bottom: 1rem;
+}
+
+.page-state {
+  padding: 7rem 4rem 4rem;
+  min-height: 100vh;
+}
+
+.loading-state .loading-msg {
+  color: var(--text-muted);
+}
+
+.page-state.not-found {
+  text-align: center;
+  color: var(--text-muted);
 }
 
 .room-grid {

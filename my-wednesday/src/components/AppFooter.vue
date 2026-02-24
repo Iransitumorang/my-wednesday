@@ -15,6 +15,7 @@ import { RouterLink } from 'vue-router'
           <RouterLink to="/">Home</RouterLink>
           <RouterLink to="/hotels">Hotel</RouterLink>
           <RouterLink to="/bookings">Booking Saya</RouterLink>
+          <RouterLink to="/admin/hotels">Admin</RouterLink>
         </div>
         <div class="footer-col">
           <h4>Kontak</h4>
