@@ -46,6 +46,23 @@ onMounted(loadHotels)
   <div class="shop">
     <div class="shop-header">
       <h1 class="page-title">Hotel</h1>
+      <div class="search-wrap">
+        <input
+          v-model="searchQuery"
+          type="search"
+          placeholder="Cari hotel atau lokasi..."
+          class="search-input"
+        />
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="btn-clear"
+          aria-label="Hapus"
+          @click="searchQuery = ''; router.replace({ path: '/hotels', query: {} })"
+        >
+          ×
+        </button>
+      </div>
       <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
     </div>
     <p v-if="error" class="no-results">{{ error }}</p>
@@ -78,6 +95,53 @@ onMounted(loadHotels)
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+.search-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  max-width: 360px;
+  width: 100%;
+}
+
+.search-wrap .search-input {
+  flex: 1;
+  padding: 0.6rem 2.25rem 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.search-wrap .search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.search-wrap .btn-clear {
+  position: absolute;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-wrap .btn-clear:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text);
 }
 
 .search-hint {

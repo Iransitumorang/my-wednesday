@@ -10,6 +10,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/auth': { target: 'http://localhost:8080', changeOrigin: true },
       '/hotels': { target: 'http://localhost:8080', changeOrigin: true },
       '/rooms': { target: 'http://localhost:8080', changeOrigin: true },
       '/bookings': { target: 'http://localhost:8080', changeOrigin: true },

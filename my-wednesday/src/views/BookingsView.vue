@@ -2,14 +2,21 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBookings, cancelBooking } from '../api/booking'
-import { useUserStore } from '../stores/user'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
-const user = useUserStore()
+const auth = useAuthStore()
 const bookings = ref([])
 const loading = ref(true)
 const error = ref(null)
-const customerFilter = ref(user.name || '')
+const customerFilter = ref('')
+
+const isAdmin = computed(() => auth.isAdmin)
+const filterValue = computed(() =>
+  isAdmin.value && customerFilter.value?.trim()
+    ? customerFilter.value.trim()
+    : auth.username || ''
+)
 
 const filteredBookings = computed(() => bookings.value)
 
@@ -20,10 +27,11 @@ const formatDate = (d) => {
 }
 
 const loadBookings = async () => {
+  if (!auth.isLoggedIn) return
   loading.value = true
   error.value = null
   try {
-    bookings.value = await getBookings(customerFilter.value)
+    bookings.value = await getBookings(filterValue.value)
   } catch (e) {
     error.value = e.message || 'Gagal memuat booking'
   } finally {
@@ -41,22 +49,38 @@ const doCancel = async (id) => {
   }
 }
 
+const clearFilter = () => {
+  customerFilter.value = ''
+}
+
 onMounted(loadBookings)
-watch(customerFilter, loadBookings)
+watch(filterValue, loadBookings)
 </script>
 
 <template>
   <div class="bookings-page">
     <h1 class="page-title">Booking Saya</h1>
-    <div class="filter-wrap">
-      <input
-        v-model="customerFilter"
-        type="text"
-        placeholder="Filter nama pemesan..."
-        class="filter-input"
-      />
+    <div v-if="isAdmin" class="filter-wrap">
+      <div class="input-wrap">
+        <input
+          v-model="customerFilter"
+          type="text"
+          placeholder="Filter nama pemesan..."
+          class="filter-input"
+        />
+        <button
+          v-if="customerFilter"
+          type="button"
+          class="btn-clear"
+          aria-label="Hapus"
+          @click="clearFilter"
+        >
+          ×
+        </button>
+      </div>
     </div>
-    <p v-if="error" class="error-msg">{{ error }}</p>
+    <p v-if="!auth.isLoggedIn" class="no-results">Silakan login untuk melihat booking</p>
+    <p v-else-if="error" class="error-msg">{{ error }}</p>
     <p v-else-if="loading" class="loading-msg">Memuat...</p>
     <p v-else-if="!filteredBookings.length" class="no-results">Tidak ada booking</p>
     <div v-else class="bookings-list">
@@ -111,8 +135,14 @@ watch(customerFilter, loadBookings)
   margin-bottom: 1.5rem;
 }
 
+.input-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 .filter-input {
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 2.25rem 0.6rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -125,6 +155,29 @@ watch(customerFilter, loadBookings)
 .filter-input:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.btn-clear {
+  position: absolute;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text);
 }
 
 .error-msg,

@@ -1,0 +1,27 @@
+const BASE = import.meta.env.VITE_API_URL || ''
+
+const fetchAuth = async (path, body) => {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = new Error('Auth Error')
+    err.status = res.status
+    try {
+      err.body = await res.json()
+      err.message = err.body?.message || res.statusText
+    } catch (_) {
+      err.message = res.statusText
+    }
+    throw err
+  }
+  return res.json()
+}
+
+export const login = (username, password) =>
+  fetchAuth('/auth/login', { username, password })
+
+export const register = (username, password, name) =>
+  fetchAuth('/auth/register', { username, password, name })

@@ -1,5 +1,10 @@
 <script setup>
 import { RouterLink } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useAuthStore } from '../stores/auth'
+
+const auth = useAuthStore()
+const { isAdmin } = storeToRefs(auth)
 </script>
 
 <template>
@@ -14,8 +19,8 @@ import { RouterLink } from 'vue-router'
           <h4>Navigasi</h4>
           <RouterLink to="/">Home</RouterLink>
           <RouterLink to="/hotels">Hotel</RouterLink>
-          <RouterLink to="/bookings">Booking Saya</RouterLink>
-          <RouterLink to="/admin/hotels">Admin</RouterLink>
+          <RouterLink v-if="!isAdmin" to="/bookings">Booking Saya</RouterLink>
+          <RouterLink v-if="isAdmin" to="/admin/hotels">Admin</RouterLink>
         </div>
         <div class="footer-col">
           <h4>Kontak</h4>

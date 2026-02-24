@@ -13,17 +13,22 @@ const hotelName = computed(() => route.query.hotelName || '')
 const roomNumber = computed(() => route.query.roomNumber || '')
 const checkIn = ref(route.query.checkIn || '')
 const checkOut = ref(route.query.checkOut || '')
-const customerName = ref('')
 
 const canSubmit = computed(() => {
   return (
     roomId.value &&
-    customerName.value?.trim() &&
     checkIn.value &&
     checkOut.value &&
     new Date(checkOut.value) > new Date(checkIn.value)
   )
 })
+
+const toApiDate = (val) => {
+  if (!val) return ''
+  const d = new Date(val)
+  if (isNaN(d.getTime())) return val
+  return d.toISOString().slice(0, 10)
+}
 
 const submit = async () => {
   if (!canSubmit.value || submitting.value) return
@@ -32,16 +37,17 @@ const submit = async () => {
   try {
     const res = await createBooking({
       roomId: Number(roomId.value),
-      customerName: customerName.value.trim(),
-      checkInDate: checkIn.value,
-      checkOutDate: checkOut.value,
+      checkInDate: toApiDate(checkIn.value),
+      checkOutDate: toApiDate(checkOut.value),
     })
     router.push({
       name: 'success',
-      state: { booking: res, customerName: customerName.value },
+      state: { booking: res },
     })
   } catch (e) {
-    error.value = e.message || 'Gagal membuat booking'
+    error.value = e.status === 401
+      ? 'Silakan login sebagai customer terlebih dahulu'
+      : (e.message || 'Gagal membuat booking')
   } finally {
     submitting.value = false
   }
@@ -58,10 +64,6 @@ onMounted(() => {
     <div v-if="roomId" class="booking-layout">
       <form class="booking-form" @submit.prevent="submit">
         <h2 class="form-title">{{ hotelName }} - Kamar {{ roomNumber }}</h2>
-        <div class="form-group">
-          <label>Nama Pemesan</label>
-          <input v-model="customerName" type="text" placeholder="Masukkan nama lengkap" required />
-        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Check-in</label>

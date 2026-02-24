@@ -1,9 +1,17 @@
 const BASE = import.meta.env.VITE_API_URL || ''
 
+const getAuthHeaders = (skipAuth) => {
+  if (skipAuth) return {}
+  const token = localStorage.getItem('auth_token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 const fetchApi = async (path, opts = {}) => {
+  const { skipAuth, ...rest } = opts
+  const headers = { 'Content-Type': 'application/json', ...getAuthHeaders(skipAuth), ...rest.headers }
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...opts.headers },
-    ...opts,
+    ...rest,
+    headers,
   })
   if (!res.ok) {
     const err = new Error('API Error')
@@ -14,27 +22,28 @@ const fetchApi = async (path, opts = {}) => {
     } catch (_) {
       err.message = res.statusText
     }
+    if (res.status === 401) err.message = 'Unauthorized - silakan login'
     throw err
   }
   if (res.status === 204) return null
   return res.json()
 }
 
-const fetchList = async (path, params = {}) => {
+const fetchList = async (path, params = {}, skipAuth = false) => {
   const q = new URLSearchParams({ page: 0, size: 20, ...params }).toString()
   const sep = path.includes('?') ? '&' : '?'
-  const res = await fetchApi(`${path}${sep}${q}`)
+  const res = await fetchApi(`${path}${sep}${q}`, { skipAuth })
   return res?.content ?? res ?? []
 }
 
 export const getHotels = (page = 0, size = 20) =>
-  fetchList('/hotels', { page, size })
-export const getHotel = (id) => fetchApi(`/hotels/${id}`)
+  fetchList('/hotels', { page, size }, true)
+export const getHotel = (id) => fetchApi(`/hotels/${id}`, { skipAuth: true })
 export const getHotelRooms = (hotelId, page = 0, size = 20) =>
-  fetchList(`/hotels/${hotelId}/rooms`, { page, size })
-export const getRoom = (id) => fetchApi(`/rooms/${id}`)
+  fetchList(`/hotels/${hotelId}/rooms`, { page, size }, true)
+export const getRoom = (id) => fetchApi(`/rooms/${id}`, { skipAuth: true })
 export const getRoomAvailability = (roomId, checkIn, checkOut) =>
-  fetchApi(`/rooms/${roomId}/availability?checkIn=${checkIn}&checkOut=${checkOut}`)
+  fetchApi(`/rooms/${roomId}/availability?checkIn=${checkIn}&checkOut=${checkOut}`, { skipAuth: true })
 export const createBooking = (body) =>
   fetchApi('/bookings', { method: 'POST', body: JSON.stringify(body) })
 export const getBookings = (customerName, page = 0, size = 20) => {

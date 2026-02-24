@@ -1,11 +1,11 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { storeToRefs } from 'pinia'
-import { useUserStore } from '../stores/user'
+import { useAuthStore } from '../stores/auth'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 
-const user = useUserStore()
-const { isLoggedIn, name: userName, tierLabel } = storeToRefs(user)
+const auth = useAuthStore()
+const { isLoggedIn, isAdmin, displayName } = storeToRefs(auth)
 const router = useRouter()
 const route = useRoute()
 const searchQuery = ref(route.query.q || '')
@@ -23,9 +23,14 @@ const onSearch = (e) => {
   else router.push('/hotels')
 }
 
+const clearSearch = () => {
+  searchQuery.value = ''
+  router.push('/hotels')
+}
+
 const logout = () => {
   showUserMenu.value = false
-  user.logout()
+  auth.logout()
 }
 
 const closeMenu = (e) => {
@@ -33,7 +38,7 @@ const closeMenu = (e) => {
 }
 
 const initials = computed(() => {
-  const n = (userName.value || '').trim()
+  const n = (displayName.value || '').trim()
   if (!n) return '?'
   const parts = n.split(/\s+/)
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
@@ -55,26 +60,37 @@ onUnmounted(() => {
       <span class="logo-text">Iran Situmorang</span>
     </RouterLink>
     <form class="search-wrap" @submit="onSearch">
-      <input
-        v-model="searchQuery"
-        type="search"
-        placeholder="Cari hotel..."
-        class="search-input"
-        aria-label="Cari hotel"
-      />
-      <button type="submit" class="search-btn" aria-label="Cari">🔍</button>
+      <div class="search-inner">
+        <input
+          v-model="searchQuery"
+          type="search"
+          placeholder="Cari hotel..."
+          class="search-input"
+          aria-label="Cari hotel"
+        />
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="btn-clear"
+          aria-label="Hapus"
+          @click="clearSearch"
+        >
+          ×
+        </button>
+        <button type="submit" class="search-btn" aria-label="Cari">🔍</button>
+      </div>
     </form>
     <nav class="nav">
       <RouterLink to="/" class="nav-link" active-class="active">Home</RouterLink>
       <RouterLink to="/hotels" class="nav-link" active-class="active">Hotel</RouterLink>
-      <RouterLink to="/bookings" class="nav-link" active-class="active">Booking Saya</RouterLink>
-      <RouterLink to="/admin/hotels" class="nav-link" active-class="active">Admin</RouterLink>
+      <RouterLink v-if="!isAdmin" to="/bookings" class="nav-link" active-class="active">Booking Saya</RouterLink>
+      <RouterLink v-if="isAdmin" to="/admin/hotels" class="nav-link" active-class="active">Admin</RouterLink>
       <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
       <div v-else class="user-wrap" @click="showUserMenu = !showUserMenu">
         <div class="user-avatar">{{ initials }}</div>
         <div class="user-info">
-          <span class="user-name">{{ userName }}</span>
-          <span class="user-role">{{ tierLabel }}</span>
+          <span class="user-name">{{ displayName }}</span>
+          <span class="user-role">{{ auth.role }}</span>
         </div>
         <Transition name="dropdown">
           <div v-if="showUserMenu" class="user-dropdown" @click.stop>
@@ -171,9 +187,16 @@ onUnmounted(() => {
   box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2);
 }
 
+.search-inner {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
 .search-input {
   flex: 1;
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 2rem 0.6rem 1rem;
   background: transparent;
   border: none;
   color: var(--text);
@@ -183,6 +206,29 @@ onUnmounted(() => {
 
 .search-input::placeholder {
   color: var(--text-muted);
+}
+
+.btn-clear {
+  position: absolute;
+  right: 2.5rem;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-clear:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text);
 }
 
 .search-btn {
@@ -342,6 +388,7 @@ onUnmounted(() => {
 .user-role {
   font-size: 0.7rem;
   color: var(--text-muted);
+  text-transform: capitalize;
 }
 
 @media (max-width: 768px) {

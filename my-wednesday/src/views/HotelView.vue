@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RoomCard from '../components/RoomCard.vue'
 import { getHotel, getHotelRooms, getRoomAvailability } from '../api/booking'
