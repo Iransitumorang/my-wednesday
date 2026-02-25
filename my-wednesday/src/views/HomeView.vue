@@ -297,6 +297,10 @@ onUnmounted(() => {
 .hero-visual {
   position: absolute;
   inset: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 7rem;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

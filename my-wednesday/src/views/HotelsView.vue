@@ -2,19 +2,24 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HotelCard from '../components/HotelCard.vue'
-import { getHotels } from '../api/booking'
+import { getHotels, getRooms } from '../api/booking'
 import { swalToast } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
 const hotels = ref([])
+const rooms = ref([])
 const loading = ref(true)
+const roomsLoading = ref(true)
 
 const searchQuery = ref(route.query.q || '')
 const filterLocation = ref('')
+const filterRoomType = ref('')
 
 const locations = computed(() => {
-  const locs = [...new Set((hotels.value || []).map((h) => h.location).filter(Boolean))]
+  const fromHotels = (hotels.value || []).map((h) => h.location)
+  const fromRooms = (rooms.value || []).map((r) => r.hotel?.location)
+  const locs = [...new Set([...fromHotels, ...fromRooms].filter(Boolean))]
   return locs.sort()
 })
 
@@ -34,6 +39,30 @@ const filteredHotels = computed(() => {
   return list
 })
 
+const filteredRooms = computed(() => {
+  let list = rooms.value || []
+  const q = searchQuery.value?.trim().toLowerCase()
+  if (q) {
+    list = list.filter(
+      (r) =>
+        r.roomNumber?.toLowerCase().includes(q) ||
+        r.type?.toLowerCase().includes(q) ||
+        r.hotel?.name?.toLowerCase().includes(q) ||
+        r.hotel?.location?.toLowerCase().includes(q)
+    )
+  }
+  if (filterLocation.value?.trim()) {
+    list = list.filter((r) => (r.hotel?.location || '').toLowerCase() === filterLocation.value.toLowerCase())
+  }
+  if (filterRoomType.value?.trim()) {
+    list = list.filter((r) => (r.type || '').toUpperCase() === filterRoomType.value.toUpperCase())
+  }
+  return list
+})
+
+const ROOM_TYPES = ['STANDARD', 'DELUXE', 'SUITE']
+const formatPrice = (n) => (n ?? 0).toLocaleString('id-ID')
+
 watch(
   () => route.query.q,
   (q) => { searchQuery.value = q || '' }
@@ -50,7 +79,21 @@ const loadHotels = async () => {
   }
 }
 
-onMounted(loadHotels)
+const loadRooms = async () => {
+  roomsLoading.value = true
+  try {
+    rooms.value = await getRooms(0, 50)
+  } catch (e) {
+    swalToast.error('Gagal memuat kamar', e.message)
+  } finally {
+    roomsLoading.value = false
+  }
+}
+
+onMounted(() => {
+  loadHotels()
+  loadRooms()
+})
 </script>
 
 <template>
@@ -62,7 +105,7 @@ onMounted(loadHotels)
           <input
             v-model="searchQuery"
             type="search"
-            placeholder="Cari hotel atau lokasi..."
+            placeholder="Cari hotel, kamar atau lokasi..."
             class="search-input"
           />
           <button
@@ -81,14 +124,45 @@ onMounted(loadHotels)
             <option v-for="loc in locations" :key="loc" :value="loc">{{ loc }}</option>
           </select>
         </div>
+        <div class="filter-location">
+          <select v-model="filterRoomType" class="filter-select">
+            <option value="">Semua Tipe Kamar</option>
+            <option v-for="t in ROOM_TYPES" :key="t" :value="t">{{ t }}</option>
+          </select>
+        </div>
       </div>
       <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
     </div>
-    <p v-if="loading" class="no-results">Memuat...</p>
-    <p v-else-if="!filteredHotels.length" class="no-results">Tidak ada hotel</p>
-    <div v-else class="product-grid">
-      <HotelCard v-for="(h, i) in filteredHotels" :key="h.id" :hotel="h" :index="i" />
-    </div>
+
+    <section class="rooms-section">
+      <h2 class="section-title">Kamar Tersedia</h2>
+      <p v-if="roomsLoading" class="no-results">Memuat kamar...</p>
+      <p v-else-if="!filteredRooms.length" class="no-results">Tidak ada kamar</p>
+      <div v-else class="rooms-list">
+        <router-link
+          v-for="(r, i) in filteredRooms"
+          :key="r.id"
+          :to="{ name: 'hotel', params: { id: r.hotel?.id } }"
+          class="room-item"
+        >
+          <div class="room-item-main">
+            <span class="room-item-type">{{ r.type }}</span>
+            <h3 class="room-item-title">Kamar {{ r.roomNumber }}</h3>
+            <p class="room-item-hotel">{{ r.hotel?.name }} · {{ r.hotel?.location }}</p>
+          </div>
+          <div class="room-item-price">Rp {{ formatPrice(r.price) }}/malam</div>
+        </router-link>
+      </div>
+    </section>
+
+    <section class="hotels-section">
+      <h2 class="section-title">Hotel & Apartemen</h2>
+      <p v-if="loading" class="no-results">Memuat...</p>
+      <p v-else-if="!filteredHotels.length" class="no-results">Tidak ada hotel</p>
+      <div v-else class="product-grid">
+        <HotelCard v-for="(h, i) in filteredHotels" :key="h.id" :hotel="h" :index="i" />
+      </div>
+    </section>
   </div>
 </template>
 
@@ -194,6 +268,75 @@ onMounted(loadHotels)
   color: var(--text-muted);
   text-align: center;
   padding: 3rem;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem 0;
+  color: var(--text);
+}
+
+.rooms-section {
+  margin-bottom: 3.5rem;
+}
+
+.rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+.room-item:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateX(4px);
+}
+
+.room-item-type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.room-item-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.2rem 0;
+  color: var(--text);
+}
+
+.room-item-hotel {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.room-item-price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.hotels-section .section-title {
+  margin-bottom: 1.5rem;
 }
 
 .product-grid {

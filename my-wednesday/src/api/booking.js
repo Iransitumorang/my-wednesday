@@ -44,6 +44,8 @@ export const getHotels = (page = 0, size = 20) =>
 export const getHotel = (id) => fetchApi(`/hotels/${id}`, { skipAuth: true })
 export const getHotelRooms = (hotelId, page = 0, size = 20) =>
   fetchList(`/hotels/${hotelId}/rooms`, { page, size }, true)
+export const getRooms = (page = 0, size = 50) =>
+  fetchList('/rooms', { page, size }, true)
 export const getRoom = (id) => fetchApi(`/rooms/${id}`, { skipAuth: true })
 export const getRoomAvailability = (roomId, checkIn, checkOut) =>
   fetchApi(`/rooms/${roomId}/availability?checkIn=${checkIn}&checkOut=${checkOut}`, { skipAuth: true })
