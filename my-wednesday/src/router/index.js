@@ -25,7 +25,7 @@ router.beforeEach((to, _from, next) => {
     next(auth.isLoggedIn ? '/' : { path: '/login', query: { returnUrl: to.fullPath } })
     return
   }
-  if (bookOnly && !auth.isUser) {
+  if (bookOnly && !auth.isLoggedIn) {
     next({ path: '/login', query: { returnUrl: to.fullPath } })
     return
   }

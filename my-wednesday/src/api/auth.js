@@ -20,8 +20,23 @@ const fetchAuth = async (path, body) => {
   return res.json()
 }
 
+const getToken = () => {
+  const raw = (localStorage.getItem('auth_token') || '').trim()
+  return raw.replace(/^["']|["']$/g, '') || null
+}
+
 export const login = (username, password) =>
   fetchAuth('/auth/login', { username, password })
 
 export const register = (username, password, name) =>
   fetchAuth('/auth/register', { username, password, name })
+
+export const getAuthMe = async () => {
+  const token = getToken()
+  if (!token) return null
+  const res = await fetch(`${BASE}/auth/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  if (!res.ok) return null
+  return res.json()
+}

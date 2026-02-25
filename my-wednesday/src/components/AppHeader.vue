@@ -31,6 +31,7 @@ const clearSearch = () => {
 const logout = () => {
   showUserMenu.value = false
   auth.logout()
+  router.push('/')
 }
 
 const closeMenu = (e) => {
@@ -84,6 +85,7 @@ onUnmounted(() => {
       <RouterLink to="/" class="nav-link" active-class="active">Home</RouterLink>
       <RouterLink to="/hotels" class="nav-link" active-class="active">Hotel</RouterLink>
       <RouterLink v-if="!isAdmin" to="/bookings" class="nav-link" active-class="active">Booking Saya</RouterLink>
+      <RouterLink v-if="isAdmin" to="/bookings" class="nav-link" active-class="active">Bookings</RouterLink>
       <RouterLink v-if="isAdmin" to="/admin/hotels" class="nav-link" active-class="active">Admin</RouterLink>
       <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
       <div v-else class="user-wrap" @click="showUserMenu = !showUserMenu">

@@ -2,11 +2,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createBooking } from '../api/booking'
+import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const submitting = ref(false)
 const error = ref(null)
+const customerName = ref('')
 
 const roomId = computed(() => route.query.roomId)
 const hotelName = computed(() => route.query.hotelName || '')
@@ -15,12 +18,10 @@ const checkIn = ref(route.query.checkIn || '')
 const checkOut = ref(route.query.checkOut || '')
 
 const canSubmit = computed(() => {
-  return (
-    roomId.value &&
-    checkIn.value &&
-    checkOut.value &&
+  const base = roomId.value && checkIn.value && checkOut.value &&
     new Date(checkOut.value) > new Date(checkIn.value)
-  )
+  if (auth.isAdmin) return base && customerName.value?.trim()
+  return base
 })
 
 const toApiDate = (val) => {
@@ -30,23 +31,31 @@ const toApiDate = (val) => {
   return d.toISOString().slice(0, 10)
 }
 
+const buildBody = () => {
+  const body = {
+    roomId: Number(roomId.value),
+    checkInDate: toApiDate(checkIn.value),
+    checkOutDate: toApiDate(checkOut.value),
+  }
+  if (auth.isAdmin && customerName.value?.trim()) {
+    body.customerName = customerName.value.trim()
+  }
+  return body
+}
+
 const submit = async () => {
   if (!canSubmit.value || submitting.value) return
   submitting.value = true
   error.value = null
   try {
-    const res = await createBooking({
-      roomId: Number(roomId.value),
-      checkInDate: toApiDate(checkIn.value),
-      checkOutDate: toApiDate(checkOut.value),
-    })
+    const res = await createBooking(buildBody())
     router.push({
       name: 'success',
       state: { booking: res },
     })
   } catch (e) {
     error.value = e.status === 401
-      ? 'Silakan login sebagai customer terlebih dahulu'
+      ? 'Silakan login terlebih dahulu'
       : (e.message || 'Gagal membuat booking')
   } finally {
     submitting.value = false
@@ -64,6 +73,10 @@ onMounted(() => {
     <div v-if="roomId" class="booking-layout">
       <form class="booking-form" @submit.prevent="submit">
         <h2 class="form-title">{{ hotelName }} - Kamar {{ roomNumber }}</h2>
+        <div v-if="auth.isAdmin" class="form-group">
+          <label>Username Customer</label>
+          <input v-model="customerName" type="text" placeholder="budi" required />
+        </div>
         <div class="form-row">
           <div class="form-group">
             <label>Check-in</label>

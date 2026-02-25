@@ -13,9 +13,7 @@ const customerFilter = ref('')
 
 const isAdmin = computed(() => auth.isAdmin)
 const filterValue = computed(() =>
-  isAdmin.value && customerFilter.value?.trim()
-    ? customerFilter.value.trim()
-    : auth.username || ''
+  isAdmin.value ? (customerFilter.value?.trim() || '') : (auth.username || '')
 )
 
 const filteredBookings = computed(() => bookings.value)
@@ -59,7 +57,7 @@ watch(filterValue, loadBookings)
 
 <template>
   <div class="bookings-page">
-    <h1 class="page-title">Booking Saya</h1>
+    <h1 class="page-title">{{ isAdmin ? 'Semua Booking' : 'Booking Saya' }}</h1>
     <div v-if="isAdmin" class="filter-wrap">
       <div class="input-wrap">
         <input

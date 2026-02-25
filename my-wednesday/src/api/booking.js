@@ -2,8 +2,10 @@ const BASE = import.meta.env.VITE_API_URL || ''
 
 const getAuthHeaders = (skipAuth) => {
   if (skipAuth) return {}
-  const token = localStorage.getItem('auth_token')
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  const raw = (localStorage.getItem('auth_token') || '').trim()
+  const token = raw.replace(/^["']|["']$/g, '')
+  if (!token) return {}
+  return { Authorization: `Bearer ${token}` }
 }
 
 const fetchApi = async (path, opts = {}) => {
@@ -23,6 +25,7 @@ const fetchApi = async (path, opts = {}) => {
       err.message = res.statusText
     }
     if (res.status === 401) err.message = 'Unauthorized - silakan login'
+    if (res.status === 403) err.message = 'Akses ditolak - login ulang dengan akun yang benar'
     throw err
   }
   if (res.status === 204) return null
