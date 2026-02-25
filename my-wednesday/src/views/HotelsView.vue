@@ -3,12 +3,12 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HotelCard from '../components/HotelCard.vue'
 import { getHotels } from '../api/booking'
+import { swalToast } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
 const hotels = ref([])
 const loading = ref(true)
-const error = ref(null)
 
 const searchQuery = ref(route.query.q || '')
 
@@ -29,11 +29,10 @@ watch(
 
 const loadHotels = async () => {
   loading.value = true
-  error.value = null
   try {
     hotels.value = await getHotels(0, 50)
   } catch (e) {
-    error.value = e.message || 'Gagal memuat hotel'
+    swalToast.error('Gagal memuat hotel', e.message)
   } finally {
     loading.value = false
   }
@@ -65,8 +64,7 @@ onMounted(loadHotels)
       </div>
       <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
     </div>
-    <p v-if="error" class="no-results">{{ error }}</p>
-    <p v-else-if="loading" class="no-results">Memuat...</p>
+    <p v-if="loading" class="no-results">Memuat...</p>
     <p v-else-if="!filteredHotels.length" class="no-results">Tidak ada hotel</p>
     <div v-else class="product-grid">
       <HotelCard v-for="(h, i) in filteredHotels" :key="h.id" :hotel="h" :index="i" />

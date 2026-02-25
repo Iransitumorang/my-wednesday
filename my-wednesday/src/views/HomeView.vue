@@ -3,15 +3,15 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import HotelCard from '../components/HotelCard.vue'
 import { getHotels } from '../api/booking'
+import { swalToast } from '../utils/swal'
 
 const hotels = ref([])
 const loading = ref(true)
-const error = ref(null)
 
 const slides = [
-  { title: 'Temukan', titleAccent: 'Hotel', sub: 'Pilih hotel favorit untuk menginap', cta: 'Lihat Hotel', link: '/hotels' },
-  { title: 'Pesan', titleAccent: 'Kamar', sub: 'Cek ketersediaan dan booking dengan mudah', cta: 'Cari Hotel', link: '/hotels' },
-  { title: 'Nikmati', titleAccent: 'Liburan', sub: 'Konfirmasi booking dan siap menginap', cta: 'Booking Saya', link: '/bookings' },
+  { title: 'Temukan', titleAccent: 'Hotel', sub: 'Pilih hotel favorit untuk menginap', cta: 'Lihat Hotel', link: '/hotels', img: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&q=80' },
+  { title: 'Pesan', titleAccent: 'Kamar', sub: 'Cek ketersediaan dan booking dengan mudah', cta: 'Cari Hotel', link: '/hotels', img: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1920&q=80' },
+  { title: 'Nikmati', titleAccent: 'Liburan', sub: 'Konfirmasi booking dan siap menginap', cta: 'Booking Saya', link: '/bookings', img: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=1920&q=80' },
 ]
 
 const current = ref(0)
@@ -51,7 +51,7 @@ onMounted(async () => {
   try {
     hotels.value = await getHotels(0, 6)
   } catch (e) {
-    error.value = e.message || 'Gagal memuat hotel'
+    swalToast.error('Gagal memuat hotel', e.message)
   } finally {
     loading.value = false
   }
@@ -94,7 +94,7 @@ onUnmounted(() => {
           class="hero-slide hero-slide-uniform"
           :class="{ active: current === i }"
         >
-          <div class="hero-visual">
+          <div class="hero-visual" :style="{ backgroundImage: `url(${slide.img})` }">
             <div class="hero-content">
               <h2 class="caption-title">{{ slide.title }} <span class="accent">{{ slide.titleAccent }}</span></h2>
               <p class="caption-sub">{{ slide.sub }}</p>
@@ -121,12 +121,12 @@ onUnmounted(() => {
 
     <section class="featured">
       <h2 class="section-title">Hotel Tersedia</h2>
-      <p v-if="error" class="section-error">{{ error }}</p>
-      <div v-else-if="loading" class="section-loading">Memuat...</div>
+      <div v-if="loading" class="section-loading">Memuat...</div>
+      <div v-else-if="!hotels.length" class="section-loading">Tidak ada hotel</div>
       <div v-else class="product-grid">
         <HotelCard v-for="(h, i) in hotels" :key="h.id" :hotel="h" :index="i" />
       </div>
-      <RouterLink v-if="!loading && !error" to="/hotels" class="section-link">Lihat Semua</RouterLink>
+      <RouterLink v-if="!loading && hotels.length" to="/hotels" class="section-link">Lihat Semua</RouterLink>
     </section>
   </div>
 </template>
@@ -269,18 +269,16 @@ onUnmounted(() => {
 }
 
 .hero-carousel {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
   width: 100%;
-  max-width: 1280px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .hero-slide {
   position: absolute;
   inset: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -290,12 +288,28 @@ onUnmounted(() => {
 }
 
 .hero-slide.active {
-  position: relative;
   opacity: 1;
   pointer-events: auto;
 }
 
+.hero-visual {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.hero-visual::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.75) 100%);
+}
+
 .hero-content {
+  position: relative;
+  z-index: 1;
   text-align: center;
   padding: 2rem;
 }
@@ -405,7 +419,6 @@ onUnmounted(() => {
   animation: fadeUp 0.6s ease-out;
 }
 
-.section-error,
 .section-loading {
   color: var(--text-muted);
   margin-bottom: 2rem;

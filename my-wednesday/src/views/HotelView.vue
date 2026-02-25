@@ -3,23 +3,26 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RoomCard from '../components/RoomCard.vue'
 import { getHotel, getHotelRooms, getRoomAvailability } from '../api/booking'
+import { swalToast } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
 const hotel = ref(null)
 const rooms = ref([])
 const loading = ref(true)
-const error = ref(null)
-const roomsError = ref(null)
 
 const checkIn = ref('')
 const checkOut = ref('')
 const availabilityMap = ref({})
 
+const hasDates = computed(() => !!(checkIn.value && checkOut.value))
+
 const roomAvailability = computed(() => {
   const map = {}
   ;(rooms.value || []).forEach((r) => {
-    if (r?.id != null) map[r.id] = availabilityMap.value[r.id] ?? true
+    if (r?.id == null) return
+    if (!hasDates.value) map[r.id] = false
+    else map[r.id] = availabilityMap.value[r.id] === true
   })
   return map
 })
@@ -28,8 +31,6 @@ const loadData = async () => {
   const id = route.params.id
   if (!id) return
   loading.value = true
-  error.value = null
-  roomsError.value = null
   hotel.value = null
   rooms.value = []
   try {
@@ -40,16 +41,16 @@ const loadData = async () => {
     if (hotelRes.status === 'fulfilled' && hotelRes.value) {
       hotel.value = hotelRes.value
     } else {
-      error.value = hotelRes.reason?.message || 'Hotel tidak ditemukan'
+      swalToast.error('Hotel tidak ditemukan', hotelRes.reason?.message)
     }
     if (roomsRes.status === 'fulfilled') {
       rooms.value = Array.isArray(roomsRes.value) ? roomsRes.value : []
     } else {
-      roomsError.value = roomsRes.reason?.message || 'Gagal memuat kamar'
+      swalToast.error('Gagal memuat kamar', roomsRes.reason?.message)
       rooms.value = []
     }
   } catch (e) {
-    error.value = e?.message || 'Gagal memuat data'
+    swalToast.error('Gagal memuat data', e?.message)
   } finally {
     loading.value = false
   }
@@ -78,6 +79,7 @@ watch(
 watch(() => route.params.id, loadData)
 
 const onBook = (room) => {
+  if (!roomAvailability.value[room.id]) return
   router.push({
     name: 'book',
     query: {
@@ -111,15 +113,16 @@ onMounted(loadData)
         <input v-model="checkOut" type="date" />
       </div>
     </div>
-    <h2 class="rooms-title">Kamar Tersedia</h2>
-    <p v-if="roomsError" class="error-msg">{{ roomsError }}</p>
-    <div v-else class="room-grid">
+    <p v-if="!hasDates" class="date-hint">Pilih tanggal check-in & check-out untuk cek ketersediaan kamar</p>
+    <h2 class="rooms-title">Kamar</h2>
+    <div class="room-grid">
       <RoomCard
         v-for="(r, i) in rooms"
         :key="r.id"
         :room="r"
         :index="i"
         :available="roomAvailability[r.id]"
+        :has-dates="hasDates"
         @book="onBook"
       />
     </div>
@@ -129,7 +132,6 @@ onMounted(loadData)
   </div>
   <div v-else class="page-state not-found">
     <h2>Hotel tidak ditemukan</h2>
-    <p v-if="error" class="error-msg">{{ error }}</p>
     <button @click="router.push('/hotels')">Kembali ke Hotel</button>
   </div>
 </template>
@@ -197,16 +199,17 @@ onMounted(loadData)
   font-size: 1rem;
 }
 
+.date-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: -0.5rem 0 1rem 0;
+}
+
 .rooms-title {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0 0 1.5rem 0;
   color: var(--text);
-}
-
-.error-msg {
-  color: #ff6b6b;
-  margin-bottom: 1rem;
 }
 
 .page-state {

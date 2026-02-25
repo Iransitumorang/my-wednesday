@@ -20,7 +20,7 @@ const fetchApi = async (path, opts = {}) => {
     err.status = res.status
     try {
       err.body = await res.json()
-      err.message = err.body?.message || res.statusText
+      err.message = err.body?.message || err.body?.detail || res.statusText
     } catch (_) {
       err.message = res.statusText
     }

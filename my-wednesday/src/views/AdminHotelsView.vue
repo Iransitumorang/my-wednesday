@@ -7,22 +7,21 @@ import {
   updateHotel,
   deleteHotel,
 } from '../api/booking'
+import { swalToast, swalConfirm } from '../utils/swal'
 
 const router = useRouter()
 const hotels = ref([])
 const loading = ref(true)
-const error = ref(null)
 const editing = ref(null)
 const addMode = ref(false)
 const form = ref({ name: '', location: '' })
 
 const loadHotels = async () => {
   loading.value = true
-  error.value = null
   try {
     hotels.value = await getHotels(0, 100)
   } catch (e) {
-    error.value = e.message || 'Gagal memuat hotel'
+    swalToast.error('Gagal memuat hotel', e.message)
   } finally {
     loading.value = false
   }
@@ -45,31 +44,40 @@ const cancelEdit = () => {
   addMode.value = false
 }
 
+const capitalizeWords = (s) =>
+  (s || '').trim().split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+
 const saveHotel = async () => {
   const { name, location } = form.value
   if (!name?.trim() || !location?.trim()) return
-  error.value = null
+  const payload = { name: capitalizeWords(name), location: capitalizeWords(location) }
   try {
     if (editing.value) {
-      await updateHotel(editing.value, { name: name.trim(), location: location.trim() })
+      await updateHotel(editing.value, payload)
     } else {
-      await createHotel({ name: name.trim(), location: location.trim() })
+      await createHotel(payload)
     }
+    swalToast.success('Berhasil', 'Hotel berhasil disimpan')
     cancelEdit()
     loadHotels()
   } catch (e) {
-    error.value = e.message || 'Gagal menyimpan'
+    swalToast.error('Gagal menyimpan', e.message)
   }
 }
 
 const doDelete = async (id) => {
-  if (!confirm('Hapus hotel ini?')) return
-  error.value = null
+  const { isConfirmed } = await swalConfirm({ title: 'Hapus hotel ini?' })
+  if (!isConfirmed) return
   try {
     await deleteHotel(id)
+    swalToast.success('Berhasil', 'Hotel berhasil dihapus')
     loadHotels()
   } catch (e) {
-    error.value = e.message || 'Gagal menghapus'
+    const msg = e.message || ''
+    const errMsg = e.status === 500 || /constraint|foreign key|violation/i.test(msg)
+      ? 'Hotel tidak dapat dihapus karena masih memiliki kamar. Hapus semua kamar terlebih dahulu.'
+      : (msg || 'Gagal menghapus')
+    swalToast.error('Gagal menghapus', errMsg)
   }
 }
 
@@ -82,7 +90,6 @@ onMounted(loadHotels)
       <h1 class="page-title">Kelola Hotel</h1>
       <button class="btn-add" @click="openAdd">+ Tambah Hotel</button>
     </div>
-    <p v-if="error" class="error-msg">{{ error }}</p>
     <div v-if="addMode || editing" class="form-card">
       <form class="inline-form" @submit.prevent="saveHotel">
         <input v-model="form.name" placeholder="Nama hotel" required />
@@ -142,11 +149,6 @@ onMounted(loadHotels)
 
 .btn-add:hover {
   background: var(--accent-hover);
-}
-
-.error-msg {
-  color: #ff6b6b;
-  margin-bottom: 1rem;
 }
 
 .form-card {

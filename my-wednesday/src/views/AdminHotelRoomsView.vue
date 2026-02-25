@@ -8,13 +8,13 @@ import {
   updateRoom,
   deleteRoom,
 } from '../api/booking'
+import { swalToast, swalConfirm } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
 const hotel = ref(null)
 const rooms = ref([])
 const loading = ref(true)
-const error = ref(null)
 const editing = ref(null)
 const addMode = ref(false)
 const form = ref({ roomNumber: '', type: 'STANDARD', price: 0 })
@@ -25,7 +25,6 @@ const loadData = async () => {
   const id = route.params.id
   if (!id) return
   loading.value = true
-  error.value = null
   try {
     const [h, r] = await Promise.allSettled([
       getHotel(id),
@@ -35,7 +34,7 @@ const loadData = async () => {
     else router.replace('/admin/hotels')
     rooms.value = r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : []
   } catch (e) {
-    error.value = e.message || 'Gagal memuat'
+    swalToast.error('Gagal memuat', e.message)
   } finally {
     loading.value = false
   }
@@ -65,11 +64,10 @@ const cancelEdit = () => {
 const saveRoom = async () => {
   const { roomNumber, type, price } = form.value
   if (!roomNumber?.trim() || !type?.trim()) return
-  error.value = null
   try {
     const body = {
       roomNumber: roomNumber.trim(),
-      type: type.trim(),
+      type: (type || '').trim().toUpperCase(),
       price: Number(price) || 0,
       hotelId: hotel.value?.id,
     }
@@ -78,21 +76,23 @@ const saveRoom = async () => {
     } else {
       await createRoom(body)
     }
+    swalToast.success('Berhasil', 'Kamar berhasil disimpan')
     cancelEdit()
     loadData()
   } catch (e) {
-    error.value = e.message || 'Gagal menyimpan'
+    swalToast.error('Gagal menyimpan', e.message)
   }
 }
 
 const doDelete = async (id) => {
-  if (!confirm('Hapus kamar ini?')) return
-  error.value = null
+  const { isConfirmed } = await swalConfirm({ title: 'Hapus kamar ini?' })
+  if (!isConfirmed) return
   try {
     await deleteRoom(id)
+    swalToast.success('Berhasil', 'Kamar berhasil dihapus')
     loadData()
   } catch (e) {
-    error.value = e.message || 'Gagal menghapus'
+    swalToast.error('Gagal menghapus', e.message)
   }
 }
 
@@ -111,7 +111,6 @@ watch(() => route.params.id, loadData)
       </div>
       <button class="btn-add" @click="openAdd">+ Tambah Kamar</button>
     </div>
-    <p v-if="error" class="error-msg">{{ error }}</p>
     <div v-if="addMode || editing" class="form-card">
       <form class="inline-form" @submit.prevent="saveRoom">
         <input v-model="form.roomNumber" placeholder="No. Kamar" required />
@@ -182,11 +181,6 @@ watch(() => route.params.id, loadData)
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.error-msg {
-  color: #ff6b6b;
-  margin-bottom: 1rem;
 }
 
 .form-card {

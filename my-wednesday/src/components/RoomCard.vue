@@ -3,6 +3,7 @@ defineProps({
   room: { type: Object, required: true },
   index: { type: Number, default: 0 },
   available: { type: Boolean, default: true },
+  hasDates: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['book'])
@@ -21,7 +22,7 @@ const formatPrice = (n) => (n ?? 0).toLocaleString('id-ID')
         :disabled="!available"
         @click="emit('book', room)"
       >
-        {{ available ? 'Pesan' : 'Tidak tersedia' }}
+        {{ available ? 'Pesan' : (hasDates ? 'Tidak tersedia' : 'Pilih tanggal') }}
       </button>
     </div>
   </div>

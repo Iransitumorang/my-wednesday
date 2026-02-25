@@ -3,12 +3,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createBooking } from '../api/booking'
 import { useAuthStore } from '../stores/auth'
+import { swalToast } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const submitting = ref(false)
-const error = ref(null)
 const customerName = ref('')
 
 const roomId = computed(() => route.query.roomId)
@@ -54,9 +54,9 @@ const submit = async () => {
       state: { booking: res },
     })
   } catch (e) {
-    error.value = e.status === 401
-      ? 'Silakan login terlebih dahulu'
-      : (e.message || 'Gagal membuat booking')
+    if (e.status === 401) swalToast.error('Silakan login terlebih dahulu')
+    else if (e.status === 400 && /already booked|sudah dibooking/i.test(e.message || '')) swalToast.error('Kamar sudah dibooking', 'Pilih tanggal atau kamar lain.')
+    else swalToast.error('Gagal membuat booking', e.message)
   } finally {
     submitting.value = false
   }
@@ -87,7 +87,6 @@ onMounted(() => {
             <input v-model="checkOut" type="date" required />
           </div>
         </div>
-        <p v-if="error" class="error-msg">{{ error }}</p>
         <button type="submit" class="btn-submit" :disabled="!canSubmit || submitting">
           {{ submitting ? 'Memproses...' : 'Konfirmasi Booking' }}
         </button>
@@ -165,12 +164,6 @@ onMounted(() => {
 .form-group input:focus {
   outline: none;
   border-color: var(--accent);
-}
-
-.error-msg {
-  color: #ff6b6b;
-  font-size: 0.9rem;
-  margin: 0 0 1rem 0;
 }
 
 .btn-submit {

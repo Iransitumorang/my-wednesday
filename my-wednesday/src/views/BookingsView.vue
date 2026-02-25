@@ -3,12 +3,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { getBookings, cancelBooking } from '../api/booking'
 import { useAuthStore } from '../stores/auth'
+import { swalToast, swalConfirm } from '../utils/swal'
 
 const router = useRouter()
 const auth = useAuthStore()
 const bookings = ref([])
 const loading = ref(true)
-const error = ref(null)
 const customerFilter = ref('')
 
 const isAdmin = computed(() => auth.isAdmin)
@@ -27,23 +27,24 @@ const formatDate = (d) => {
 const loadBookings = async () => {
   if (!auth.isLoggedIn) return
   loading.value = true
-  error.value = null
   try {
     bookings.value = await getBookings(filterValue.value)
   } catch (e) {
-    error.value = e.message || 'Gagal memuat booking'
+    swalToast.error('Gagal memuat booking', e.message)
   } finally {
     loading.value = false
   }
 }
 
 const doCancel = async (id) => {
-  if (!confirm('Batalkan booking ini?')) return
+  const { isConfirmed } = await swalConfirm({ title: 'Batalkan booking ini?' })
+  if (!isConfirmed) return
   try {
     await cancelBooking(id)
+    swalToast.success('Berhasil', 'Booking berhasil dibatalkan')
     loadBookings()
   } catch (e) {
-    error.value = e.message || 'Gagal membatalkan'
+    swalToast.error('Gagal membatalkan', e.message)
   }
 }
 
@@ -78,7 +79,6 @@ watch(filterValue, loadBookings)
       </div>
     </div>
     <p v-if="!auth.isLoggedIn" class="no-results">Silakan login untuk melihat booking</p>
-    <p v-else-if="error" class="error-msg">{{ error }}</p>
     <p v-else-if="loading" class="loading-msg">Memuat...</p>
     <p v-else-if="!filteredBookings.length" class="no-results">Tidak ada booking</p>
     <div v-else class="bookings-list">
@@ -178,7 +178,6 @@ watch(filterValue, loadBookings)
   color: var(--text);
 }
 
-.error-msg,
 .loading-msg {
   color: var(--text-muted);
   margin-bottom: 1rem;

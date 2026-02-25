@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { swalToast } from '../utils/swal'
 
 const router = useRouter()
 const route = useRoute()
@@ -9,14 +10,12 @@ const auth = useAuthStore()
 const mode = ref('login')
 const form = ref({ username: 'admin', password: 'admin123', name: '' })
 const showPassword = ref(false)
-const error = ref(null)
 const loading = ref(false)
 
 const submit = async () => {
   const { username, password, name } = form.value
   if (!username?.trim() || !password?.trim()) return
   if (mode.value === 'register' && !name?.trim()) return
-  error.value = null
   loading.value = true
   try {
     if (mode.value === 'login') {
@@ -27,7 +26,7 @@ const submit = async () => {
     const returnUrl = route.query.returnUrl || '/'
     router.push(returnUrl)
   } catch (e) {
-    error.value = e.message || 'Gagal'
+    swalToast.error('Gagal', e.message)
   } finally {
     loading.value = false
   }
@@ -40,11 +39,14 @@ const CREDS = {
 
 const switchMode = () => {
   mode.value = mode.value === 'login' ? 'register' : 'login'
-  error.value = null
+  selectedRole.value = null
   form.value = mode.value === 'login' ? { ...CREDS.admin, name: '' } : { username: '', password: '', name: '' }
 }
 
+const selectedRole = ref('admin')
+
 const fillCreds = (role) => {
+  selectedRole.value = role
   form.value = { ...CREDS[role], name: form.value.name }
 }
 
@@ -125,15 +127,29 @@ const togglePassword = () => {
             </button>
           </div>
         </div>
-        <p v-if="error" class="error-msg">{{ error }}</p>
         <button type="submit" class="btn-login" :disabled="loading">
           {{ loading ? 'Memproses...' : (mode === 'login' ? 'Masuk' : 'Daftar') }}
         </button>
       </form>
-      <div v-if="mode === 'login'" class="cred-hint">
-        <button type="button" class="cred-btn" @click="fillCreds('admin')">Admin</button>
-        <span class="cred-sep">/</span>
-        <button type="button" class="cred-btn" @click="fillCreds('customer')">Customer</button>
+      <div v-if="mode === 'login'" class="cred-selector">
+        <button
+          type="button"
+          class="cred-btn cred-admin"
+          :class="{ active: selectedRole === 'admin' }"
+          @click="fillCreds('admin')"
+        >
+          <span class="cred-icon">⚙</span>
+          <span>Admin</span>
+        </button>
+        <button
+          type="button"
+          class="cred-btn cred-customer"
+          :class="{ active: selectedRole === 'customer' }"
+          @click="fillCreds('customer')"
+        >
+          <span class="cred-icon">👤</span>
+          <span>Customer</span>
+        </button>
       </div>
       <p class="login-hint">
         <button type="button" class="link-btn" @click="switchMode">
@@ -188,33 +204,55 @@ const togglePassword = () => {
   align-items: center;
 }
 
-.cred-hint {
+.cred-selector {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.cred-btn {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.cred-btn {
-  padding: 0.35rem 0.75rem;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: var(--text-muted);
-  border-radius: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.cred-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.cred-sep {
-  color: var(--text-muted);
+  padding: 0.85rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
   font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.cred-admin {
+  background: rgba(139, 92, 246, 0.08);
+  color: #a78bfa;
+}
+
+.cred-admin:hover,
+.cred-admin.active {
+  background: rgba(139, 92, 246, 0.2);
+  border-color: rgba(139, 92, 246, 0.5);
+  color: #c4b5fd;
+}
+
+.cred-customer {
+  background: rgba(34, 211, 238, 0.08);
+  color: #22d3ee;
+}
+
+.cred-customer:hover,
+.cred-customer.active {
+  background: rgba(34, 211, 238, 0.2);
+  border-color: rgba(34, 211, 238, 0.5);
+  color: #67e8f9;
+}
+
+.cred-icon {
+  font-size: 1.1rem;
 }
 
 .input-wrap input {
@@ -279,12 +317,6 @@ const togglePassword = () => {
   color: var(--text);
 }
 
-.error-msg {
-  color: #ff6b6b;
-  font-size: 0.9rem;
-  margin: 0 0 1rem 0;
-}
-
 .btn-login {
   width: 100%;
   padding: 0.9rem;
@@ -296,6 +328,7 @@ const togglePassword = () => {
   font-weight: 600;
   cursor: pointer;
   margin-top: 0.5rem;
+  margin-bottom: 1.5rem;
   transition: background 0.3s ease, transform 0.3s ease;
 }
 
