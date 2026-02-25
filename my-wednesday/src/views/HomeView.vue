@@ -97,7 +97,9 @@ onUnmounted(() => {
           <div class="hero-visual" :style="{ backgroundImage: `url(${slide.img})` }">
             <div class="hero-content">
               <h2 class="caption-title">{{ slide.title }} <span class="accent">{{ slide.titleAccent }}</span></h2>
-              <p class="caption-sub">{{ slide.sub }}</p>
+              <div class="caption-sub-box">
+                <p class="caption-sub">{{ slide.sub }}</p>
+              </div>
               <RouterLink :to="slide.link" class="caption-cta">{{ slide.cta }}</RouterLink>
             </div>
           </div>
@@ -327,10 +329,18 @@ onUnmounted(() => {
   text-shadow: 0 0 24px rgba(201, 162, 39, 0.25);
 }
 
+.caption-sub-box {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 0.85rem 1.5rem;
+  margin: 0 0 1.5rem 0;
+}
+
 .caption-sub {
   font-size: 1.1rem;
   color: var(--text-muted);
-  margin: 0 0 1.5rem 0;
+  margin: 0;
   line-height: 1.4;
 }
 

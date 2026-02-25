@@ -14,6 +14,9 @@ const loading = ref(true)
 const checkIn = ref('')
 const checkOut = ref('')
 const availabilityMap = ref({})
+const filterType = ref('')
+const filterPriceMin = ref('')
+const filterPriceMax = ref('')
 
 const hasDates = computed(() => !!(checkIn.value && checkOut.value))
 
@@ -25,6 +28,25 @@ const roomAvailability = computed(() => {
     else map[r.id] = availabilityMap.value[r.id] === true
   })
   return map
+})
+
+const filteredRooms = computed(() => {
+  let list = rooms.value || []
+  if (filterType.value?.trim()) {
+    list = list.filter((r) => (r.type || '').toUpperCase() === filterType.value.toUpperCase())
+  }
+  const min = Number(filterPriceMin.value)
+  const max = Number(filterPriceMax.value)
+  if (!isNaN(min) && min > 0) list = list.filter((r) => (r.price ?? 0) >= min)
+  if (!isNaN(max) && max > 0) list = list.filter((r) => (r.price ?? 0) <= max)
+  return list
+})
+
+const ROOM_TYPES = ['STANDARD', 'DELUXE', 'SUITE']
+
+const minPrice = computed(() => {
+  const prices = (rooms.value || []).map((r) => r.price).filter((p) => p != null && p > 0)
+  return prices.length ? Math.min(...prices).toLocaleString('id-ID') : '0'
 })
 
 const loadData = async () => {
@@ -102,6 +124,7 @@ onMounted(loadData)
     <div class="hotel-header">
       <h1 class="hotel-title">{{ hotel.name }}</h1>
       <p class="hotel-location">{{ hotel.location }}</p>
+      <p class="hotel-info">Harga mulai Rp {{ minPrice }} / malam · {{ rooms.length }} kamar</p>
     </div>
     <div class="date-filter">
       <div class="form-group">
@@ -114,10 +137,27 @@ onMounted(loadData)
       </div>
     </div>
     <p v-if="!hasDates" class="date-hint">Pilih tanggal check-in & check-out untuk cek ketersediaan kamar</p>
-    <h2 class="rooms-title">Kamar</h2>
+    <div class="room-filters">
+      <div class="filter-group">
+        <label>Tipe Kamar</label>
+        <select v-model="filterType">
+          <option value="">Semua</option>
+          <option v-for="t in ROOM_TYPES" :key="t" :value="t">{{ t }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Harga Min</label>
+        <input v-model="filterPriceMin" type="number" min="0" placeholder="Rp" />
+      </div>
+      <div class="filter-group">
+        <label>Harga Max</label>
+        <input v-model="filterPriceMax" type="number" min="0" placeholder="Rp" />
+      </div>
+    </div>
+    <h2 class="rooms-title">Kamar ({{ filteredRooms.length }})</h2>
     <div class="room-grid">
       <RoomCard
-        v-for="(r, i) in rooms"
+        v-for="(r, i) in filteredRooms"
         :key="r.id"
         :room="r"
         :index="i"
@@ -173,7 +213,38 @@ onMounted(loadData)
 .hotel-location {
   font-size: 1rem;
   color: var(--accent);
+  margin: 0 0 0.25rem 0;
+}
+
+.hotel-info {
+  font-size: 0.95rem;
+  color: var(--text-muted);
   margin: 0;
+}
+
+.room-filters {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.filter-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 0.5rem 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 0.95rem;
+  min-width: 120px;
 }
 
 .date-filter {

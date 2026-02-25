@@ -10,13 +10,29 @@ const auth = useAuthStore()
 const bookings = ref([])
 const loading = ref(true)
 const customerFilter = ref('')
+const filterStatus = ref('')
+const filterHotel = ref('')
 
 const isAdmin = computed(() => auth.isAdmin)
 const filterValue = computed(() =>
   isAdmin.value ? (customerFilter.value?.trim() || '') : (auth.username || '')
 )
 
-const filteredBookings = computed(() => bookings.value)
+const hotelNames = computed(() => {
+  const names = [...new Set((bookings.value || []).map((b) => b.room?.hotel?.name).filter(Boolean))]
+  return names.sort()
+})
+
+const filteredBookings = computed(() => {
+  let list = bookings.value || []
+  if (filterStatus.value?.trim()) {
+    list = list.filter((b) => (b.status || '').toUpperCase() === filterStatus.value.toUpperCase())
+  }
+  if (filterHotel.value?.trim()) {
+    list = list.filter((b) => (b.room?.hotel?.name || '') === filterHotel.value)
+  }
+  return list
+})
 
 const formatDate = (d) => {
   if (!d) return '-'
@@ -59,8 +75,8 @@ watch(filterValue, loadBookings)
 <template>
   <div class="bookings-page">
     <h1 class="page-title">{{ isAdmin ? 'Semua Booking' : 'Booking Saya' }}</h1>
-    <div v-if="isAdmin" class="filter-wrap">
-      <div class="input-wrap">
+    <div class="filter-wrap">
+      <div v-if="isAdmin" class="input-wrap">
         <input
           v-model="customerFilter"
           type="text"
@@ -76,6 +92,19 @@ watch(filterValue, loadBookings)
         >
           ×
         </button>
+      </div>
+      <div class="filter-group">
+        <select v-model="filterStatus" class="filter-select">
+          <option value="">Semua Status</option>
+          <option value="BOOKED">Booked</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <select v-model="filterHotel" class="filter-select">
+          <option value="">Semua Hotel</option>
+          <option v-for="name in hotelNames" :key="name" :value="name">{{ name }}</option>
+        </select>
       </div>
     </div>
     <p v-if="!auth.isLoggedIn" class="no-results">Silakan login untuk melihat booking</p>
@@ -130,6 +159,10 @@ watch(filterValue, loadBookings)
 }
 
 .filter-wrap {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
   margin-bottom: 1.5rem;
 }
 
@@ -137,6 +170,21 @@ watch(filterValue, loadBookings)
   position: relative;
   display: inline-flex;
   align-items: center;
+}
+
+.filter-group .filter-select {
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  min-width: 160px;
+}
+
+.filter-group .filter-select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .filter-input {

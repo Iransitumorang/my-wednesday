@@ -11,15 +11,27 @@ const hotels = ref([])
 const loading = ref(true)
 
 const searchQuery = ref(route.query.q || '')
+const filterLocation = ref('')
+
+const locations = computed(() => {
+  const locs = [...new Set((hotels.value || []).map((h) => h.location).filter(Boolean))]
+  return locs.sort()
+})
 
 const filteredHotels = computed(() => {
+  let list = hotels.value || []
   const q = searchQuery.value?.trim().toLowerCase()
-  if (!q) return hotels.value
-  return hotels.value.filter(
-    (h) =>
-      h.name?.toLowerCase().includes(q) ||
-      h.location?.toLowerCase().includes(q)
-  )
+  if (q) {
+    list = list.filter(
+      (h) =>
+        h.name?.toLowerCase().includes(q) ||
+        h.location?.toLowerCase().includes(q)
+    )
+  }
+  if (filterLocation.value?.trim()) {
+    list = list.filter((h) => (h.location || '').toLowerCase() === filterLocation.value.toLowerCase())
+  }
+  return list
 })
 
 watch(
@@ -45,22 +57,30 @@ onMounted(loadHotels)
   <div class="shop">
     <div class="shop-header">
       <h1 class="page-title">Hotel</h1>
-      <div class="search-wrap">
-        <input
-          v-model="searchQuery"
-          type="search"
-          placeholder="Cari hotel atau lokasi..."
-          class="search-input"
-        />
-        <button
-          v-if="searchQuery"
-          type="button"
-          class="btn-clear"
-          aria-label="Hapus"
-          @click="searchQuery = ''; router.replace({ path: '/hotels', query: {} })"
-        >
-          ×
-        </button>
+      <div class="filters-row">
+        <div class="search-wrap">
+          <input
+            v-model="searchQuery"
+            type="search"
+            placeholder="Cari hotel atau lokasi..."
+            class="search-input"
+          />
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="btn-clear"
+            aria-label="Hapus"
+            @click="searchQuery = ''; router.replace({ path: '/hotels', query: {} })"
+          >
+            ×
+          </button>
+        </div>
+        <div class="filter-location">
+          <select v-model="filterLocation" class="filter-select">
+            <option value="">Semua Lokasi</option>
+            <option v-for="loc in locations" :key="loc" :value="loc">{{ loc }}</option>
+          </select>
+        </div>
       </div>
       <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
     </div>
@@ -95,13 +115,35 @@ onMounted(loadHotels)
   to { opacity: 1; transform: translateY(0); }
 }
 
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
 .search-wrap {
   position: relative;
   display: inline-flex;
   align-items: center;
-  margin-bottom: 1rem;
   max-width: 360px;
   width: 100%;
+}
+
+.filter-location .filter-select {
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  min-width: 180px;
+}
+
+.filter-location .filter-select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .search-wrap .search-input {
