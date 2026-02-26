@@ -33,7 +33,7 @@ const toApiDate = (val) => {
 
 const buildBody = () => {
   const body = {
-    roomId: Number(roomId.value),
+    roomId: String(roomId.value || ''),
     checkInDate: toApiDate(checkIn.value),
     checkOutDate: toApiDate(checkOut.value),
   }
@@ -46,7 +46,6 @@ const buildBody = () => {
 const submit = async () => {
   if (!canSubmit.value || submitting.value) return
   submitting.value = true
-  error.value = null
   try {
     const res = await createBooking(buildBody())
     router.push({

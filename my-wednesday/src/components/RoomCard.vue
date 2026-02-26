@@ -4,6 +4,8 @@ defineProps({
   index: { type: Number, default: 0 },
   available: { type: Boolean, default: true },
   hasDates: { type: Boolean, default: true },
+  alreadyBooked: { type: Boolean, default: false },
+  linkLabel: { type: String, default: '' },
 })
 
 const emit = defineEmits(['book'])
@@ -19,10 +21,10 @@ const formatPrice = (n) => (n ?? 0).toLocaleString('id-ID')
       <p class="card-price">Rp {{ formatPrice(room.price) }} / malam</p>
       <button
         class="btn-book"
-        :disabled="!available"
+        :disabled="alreadyBooked || (!linkLabel && !available)"
         @click="emit('book', room)"
       >
-        {{ available ? 'Pesan' : (hasDates ? 'Tidak tersedia' : 'Pilih tanggal') }}
+        {{ linkLabel || (alreadyBooked ? 'Sudah dipesan' : (available ? 'Pesan' : (hasDates ? 'Tidak tersedia' : 'Pilih tanggal'))) }}
       </button>
     </div>
   </div>

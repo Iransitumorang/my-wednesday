@@ -9,6 +9,7 @@ const router = useRouter()
 const auth = useAuthStore()
 const bookings = ref([])
 const loading = ref(true)
+const loadError = ref(null)
 const customerFilter = ref('')
 const filterStatus = ref('')
 const filterHotel = ref('')
@@ -43,10 +44,13 @@ const formatDate = (d) => {
 const loadBookings = async () => {
   if (!auth.isLoggedIn) return
   loading.value = true
+  loadError.value = null
   try {
     bookings.value = await getBookings(filterValue.value)
   } catch (e) {
-    swalToast.error('Gagal memuat booking', e.message)
+    loadError.value = e.status === 500
+      ? 'Server sedang bermasalah. Pastikan backend berjalan di localhost:8080.'
+      : (e.message || 'Gagal memuat booking')
   } finally {
     loading.value = false
   }
@@ -109,6 +113,7 @@ watch(filterValue, loadBookings)
     </div>
     <p v-if="!auth.isLoggedIn" class="no-results">Silakan login untuk melihat booking</p>
     <p v-else-if="loading" class="loading-msg">Memuat...</p>
+    <p v-else-if="loadError" class="error-msg">{{ loadError }}</p>
     <p v-else-if="!filteredBookings.length" class="no-results">Tidak ada booking</p>
     <div v-else class="bookings-list">
       <div
@@ -228,6 +233,14 @@ watch(filterValue, loadBookings)
 
 .loading-msg {
   color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.error-msg {
+  color: #ff6b6b;
+  padding: 1rem;
+  background: rgba(255, 107, 107, 0.1);
+  border-radius: 8px;
   margin-bottom: 1rem;
 }
 

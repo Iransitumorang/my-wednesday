@@ -1,3 +1,7 @@
+/**
+ * Hotel Booking API
+ * Semua id, hotelId, roomId = string UUID (bukan number)
+ */
 const BASE = import.meta.env.VITE_API_URL || ''
 
 const getAuthHeaders = (skipAuth) => {

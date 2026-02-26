@@ -40,10 +40,18 @@ const loadData = async () => {
   }
 }
 
+const getNextRoomNumber = () => {
+  const nums = rooms.value
+    .map((r) => parseInt(String(r.roomNumber || '').replace(/\D/g, ''), 10))
+    .filter((n) => !isNaN(n))
+  const max = nums.length ? Math.max(...nums) : 0
+  return String(max + 1).padStart(3, '0')
+}
+
 const openAdd = () => {
   editing.value = null
   addMode.value = true
-  form.value = { roomNumber: '', type: 'STANDARD', price: 0 }
+  form.value = { roomNumber: getNextRoomNumber(), type: 'STANDARD', price: 0 }
 }
 
 const openEdit = (r) => {

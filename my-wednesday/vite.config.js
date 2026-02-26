@@ -26,6 +26,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        bypass: (req) => (req.headers.accept?.includes('text/html') ? '/index.html' : null),
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req) => {
             if (req.headers.authorization) {
@@ -38,6 +39,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        bypass: (req) => (req.headers.accept?.includes('text/html') ? '/index.html' : null),
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req) => {
             if (req.headers.authorization) {
@@ -50,6 +52,7 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        bypass: (req) => (req.headers.accept?.includes('text/html') ? '/index.html' : null),
         configure: (proxy) => {
           proxy.on('proxyReq', (proxyReq, req) => {
             if (req.headers.authorization) {

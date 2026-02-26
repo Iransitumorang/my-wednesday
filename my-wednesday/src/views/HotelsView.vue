@@ -1,16 +1,20 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import HotelCard from '../components/HotelCard.vue'
-import { getHotels, getRooms } from '../api/booking'
+import { getHotels, getRooms, getBookings } from '../api/booking'
 import { swalToast } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const hotels = ref([])
 const rooms = ref([])
 const loading = ref(true)
 const roomsLoading = ref(true)
+const roomsError = ref(false)
+const userBookedRoomIds = ref(new Set())
 
 const searchQuery = ref(route.query.q || '')
 const filterLocation = ref('')
@@ -79,15 +83,33 @@ const loadHotels = async () => {
   }
 }
 
+const loadUserBookings = async () => {
+  if (!auth.isLoggedIn) return
+  try {
+    const customer = auth.isAdmin ? '' : auth.username
+    const list = await getBookings(customer, 0, 100)
+    const ids = new Set()
+    ;(list || []).forEach((b) => {
+      if (b?.status === 'BOOKED' && b?.room?.id) ids.add(b.room.id)
+    })
+    userBookedRoomIds.value = ids
+  } catch (_) {
+    userBookedRoomIds.value = new Set()
+  }
+}
+
 const loadRooms = async () => {
   roomsLoading.value = true
+  roomsError.value = false
   try {
     rooms.value = await getRooms(0, 50)
   } catch (e) {
-    swalToast.error('Gagal memuat kamar', e.message)
+    roomsError.value = true
+    rooms.value = []
   } finally {
     roomsLoading.value = false
   }
+  loadUserBookings()
 }
 
 onMounted(() => {
@@ -137,26 +159,32 @@ onMounted(() => {
     <section class="rooms-section">
       <h2 class="section-title">Kamar Tersedia</h2>
       <p v-if="roomsLoading" class="no-results">Memuat kamar...</p>
+      <p v-else-if="roomsError" class="section-hint">Tidak dapat memuat daftar kamar. Klik hotel untuk lihat kamar.</p>
       <p v-else-if="!filteredRooms.length" class="no-results">Tidak ada kamar</p>
       <div v-else class="rooms-list">
-        <router-link
-          v-for="(r, i) in filteredRooms"
+        <component
+          v-for="r in filteredRooms"
           :key="r.id"
-          :to="{ name: 'hotel', params: { id: r.hotel?.id } }"
+          :is="userBookedRoomIds.has(r.id) ? 'div' : 'router-link'"
+          :to="userBookedRoomIds.has(r.id) ? undefined : { name: 'room', params: { id: r.id } }"
           class="room-item"
+          :class="{ 'room-item--sold': userBookedRoomIds.has(r.id) }"
         >
           <div class="room-item-main">
             <span class="room-item-type">{{ r.type }}</span>
             <h3 class="room-item-title">Kamar {{ r.roomNumber }}</h3>
             <p class="room-item-hotel">{{ r.hotel?.name }} · {{ r.hotel?.location }}</p>
           </div>
-          <div class="room-item-price">Rp {{ formatPrice(r.price) }}/malam</div>
-        </router-link>
+          <div class="room-item-right">
+            <span v-if="userBookedRoomIds.has(r.id)" class="room-item-sold">Sudah terjual</span>
+            <div class="room-item-price">Rp {{ formatPrice(r.price) }}/malam</div>
+          </div>
+        </component>
       </div>
     </section>
 
     <section class="hotels-section">
-      <h2 class="section-title">Hotel & Apartemen</h2>
+      <h2 class="section-title">Hotel</h2>
       <p v-if="loading" class="no-results">Memuat...</p>
       <p v-else-if="!filteredHotels.length" class="no-results">Tidak ada hotel</p>
       <div v-else class="product-grid">
@@ -277,8 +305,14 @@ onMounted(() => {
   color: var(--text);
 }
 
+.section-hint {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 1rem 0;
+}
+
 .rooms-section {
-  margin-bottom: 3.5rem;
+  margin-bottom: 3rem;
 }
 
 .rooms-list {
@@ -301,9 +335,32 @@ onMounted(() => {
   transition: all 0.3s ease;
 }
 
-.room-item:hover {
+.room-item:hover:not(.room-item--sold) {
   border-color: rgba(255, 255, 255, 0.12);
   transform: translateX(4px);
+}
+
+.room-item--sold {
+  opacity: 0.65;
+  cursor: default;
+  pointer-events: none;
+}
+
+.room-item-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.room-item-sold {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.15);
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
 }
 
 .room-item-type {

@@ -1,12 +1,14 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import RoomCard from '../components/RoomCard.vue'
-import { getHotel, getHotelRooms, getRoomAvailability } from '../api/booking'
+import { getHotel, getHotelRooms, getRoomAvailability, getBookings } from '../api/booking'
 import { swalToast } from '../utils/swal'
 
 const route = useRoute()
 const router = useRouter()
+const auth = useAuthStore()
 const hotel = ref(null)
 const rooms = ref([])
 const loading = ref(true)
@@ -14,6 +16,7 @@ const loading = ref(true)
 const checkIn = ref('')
 const checkOut = ref('')
 const availabilityMap = ref({})
+const userBookedRoomIds = ref(new Set())
 const filterType = ref('')
 const filterPriceMin = ref('')
 const filterPriceMax = ref('')
@@ -49,6 +52,20 @@ const minPrice = computed(() => {
   return prices.length ? Math.min(...prices).toLocaleString('id-ID') : '0'
 })
 
+const loadUserBookings = async () => {
+  if (!auth.isLoggedIn || !auth.username) return
+  try {
+    const list = await getBookings(auth.username, 0, 100)
+    const ids = new Set()
+    ;(list || []).forEach((b) => {
+      if (b?.status === 'BOOKED' && b?.room?.id) ids.add(b.room.id)
+    })
+    userBookedRoomIds.value = ids
+  } catch (_) {
+    userBookedRoomIds.value = new Set()
+  }
+}
+
 const loadData = async () => {
   const id = route.params.id
   if (!id) return
@@ -76,6 +93,7 @@ const loadData = async () => {
   } finally {
     loading.value = false
   }
+  loadUserBookings()
 }
 
 const checkAvailability = async () => {
@@ -163,6 +181,7 @@ onMounted(loadData)
         :index="i"
         :available="roomAvailability[r.id]"
         :has-dates="hasDates"
+        :already-booked="userBookedRoomIds.has(r.id)"
         @book="onBook"
       />
     </div>
