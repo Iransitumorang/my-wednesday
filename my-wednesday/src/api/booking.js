@@ -24,12 +24,19 @@ const fetchApi = async (path, opts = {}) => {
     err.status = res.status
     try {
       err.body = await res.json()
-      err.message = err.body?.message || err.body?.detail || res.statusText
+      const v = err.body?.violations
+      const fallback = err.body?.message || err.body?.detail || res.statusText
+      if (Array.isArray(v) && v.length) {
+        const msg = v.map((x) => x.message).filter(Boolean).join('. ')
+        err.message = msg ? msg.charAt(0).toUpperCase() + msg.slice(1) : fallback
+      } else {
+        err.message = typeof fallback === 'string' ? fallback : res.statusText
+      }
     } catch (_) {
       err.message = res.statusText
     }
-    if (res.status === 401) err.message = 'Unauthorized - silakan login'
-    if (res.status === 403) err.message = 'Akses ditolak - login ulang dengan akun yang benar'
+    if (res.status === 401) err.message = 'Unauthorized'
+    if (res.status === 403) err.message = 'Akses ditolak'
     throw err
   }
   if (res.status === 204) return null

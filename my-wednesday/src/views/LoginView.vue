@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { swalToast } from '../utils/swal'
+import { humanizeApiError } from '../utils/errorMsg'
 
 const router = useRouter()
 const route = useRoute()
@@ -27,7 +28,8 @@ const submit = async () => {
     const dest = auth.isAdmin ? (returnUrl?.startsWith('/admin') ? returnUrl : '/admin/hotels') : (returnUrl || '/')
     router.push(dest)
   } catch (e) {
-    swalToast.error('Gagal', e.message)
+    const msg = humanizeApiError(e)
+    swalToast.error(mode.value === 'login' ? 'Gagal login' : 'Gagal daftar', msg)
   } finally {
     loading.value = false
   }

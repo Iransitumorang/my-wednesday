@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { createBooking } from '../api/booking'
 import { useAuthStore } from '../stores/auth'
 import { swalToast } from '../utils/swal'
+import { humanizeApiError } from '../utils/errorMsg'
 
 const route = useRoute()
 const router = useRouter()
@@ -53,9 +54,7 @@ const submit = async () => {
       state: { booking: res },
     })
   } catch (e) {
-    if (e.status === 401) swalToast.error('Silakan login terlebih dahulu')
-    else if (e.status === 400 && /already booked|sudah dibooking/i.test(e.message || '')) swalToast.error('Kamar sudah dibooking', 'Pilih tanggal atau kamar lain.')
-    else swalToast.error('Gagal membuat booking', e.message)
+    swalToast.error('Gagal membuat booking', humanizeApiError(e))
   } finally {
     submitting.value = false
   }

@@ -1,7 +1,7 @@
 import Swal from 'sweetalert2'
 
 const toast = (icon, title, text = '') =>
-  Swal.fire({ icon, title, text, toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 })
+  Swal.fire({ icon, title, text, toast: true, position: 'center', showConfirmButton: false, timer: 3000 })
 
 export const swalToast = {
   success: (title, text) => toast('success', title, text),
