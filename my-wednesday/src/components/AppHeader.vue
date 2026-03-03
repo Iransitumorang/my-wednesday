@@ -31,7 +31,7 @@ const clearSearch = () => {
 const logout = () => {
   showUserMenu.value = false
   auth.logout()
-  router.push('/')
+  router.replace('/login')
 }
 
 const closeMenu = (e) => {

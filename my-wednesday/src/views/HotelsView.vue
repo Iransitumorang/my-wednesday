@@ -3,7 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import HotelCard from '../components/HotelCard.vue'
-import { getHotels, getRooms, getBookings } from '../api/booking'
+import { getHotels, getRooms, getBookings, getRoomAvailability } from '../api/booking'
 import { swalToast } from '../utils/swal'
 
 const route = useRoute()
@@ -19,6 +19,10 @@ const userBookedRoomIds = ref(new Set())
 const searchQuery = ref(route.query.q || '')
 const filterLocation = ref('')
 const filterRoomType = ref('')
+const filterCheckIn = ref('')
+const filterCheckOut = ref('')
+const availabilityMap = ref({})
+const availabilityChecking = ref(false)
 
 const locations = computed(() => {
   const fromHotels = (hotels.value || []).map((h) => h.location)
@@ -43,7 +47,9 @@ const filteredHotels = computed(() => {
   return list
 })
 
-const filteredRooms = computed(() => {
+const hasDateFilter = computed(() => !!(filterCheckIn.value && filterCheckOut.value))
+
+const baseFilteredRooms = computed(() => {
   let list = rooms.value || []
   const q = searchQuery.value?.trim().toLowerCase()
   if (q) {
@@ -64,12 +70,63 @@ const filteredRooms = computed(() => {
   return list
 })
 
+const filteredRooms = computed(() => baseFilteredRooms.value)
+
+const isRoomDisabled = (r) => {
+  if (userBookedRoomIds.value.has(r?.id)) return true
+  if (hasDateFilter.value && !availabilityChecking.value && availabilityMap.value[r?.id] === false) return true
+  return false
+}
+
+const getRoomStatusLabel = (r) => {
+  if (userBookedRoomIds.value.has(r?.id)) return 'Sudah terjual'
+  if (hasDateFilter.value && !availabilityChecking.value && availabilityMap.value[r?.id] === false) return 'Tidak tersedia'
+  return null
+}
+
+const checkAvailability = async () => {
+  if (!filterCheckIn.value || !filterCheckOut.value) return
+  availabilityChecking.value = true
+  const map = {}
+  for (const r of baseFilteredRooms.value) {
+    if (!r?.id) continue
+    try {
+      const res = await getRoomAvailability(r.id, filterCheckIn.value, filterCheckOut.value)
+      map[r.id] = res?.available === true
+    } catch (_) {
+      map[r.id] = false
+    }
+  }
+  availabilityMap.value = map
+  availabilityChecking.value = false
+}
+
+watch(
+  () => [filterCheckIn.value, filterCheckOut.value],
+  () => {
+    if (filterCheckIn.value && filterCheckOut.value) checkAvailability()
+    else availabilityMap.value = {}
+  },
+  { deep: true }
+)
+
 const ROOM_TYPES = ['STANDARD', 'DELUXE', 'SUITE']
 const formatPrice = (n) => (n ?? 0).toLocaleString('id-ID')
 
 watch(
   () => route.query.q,
   (q) => { searchQuery.value = q || '' }
+)
+
+watch(
+  () => auth.isLoggedIn,
+  () => { loadSoldOutRooms() }
+)
+
+watch(
+  () => [filterLocation.value, filterRoomType.value, searchQuery.value],
+  () => { if (hasDateFilter.value) checkAvailability() },
+  { deep: true }
 )
 
 const loadHotels = async () => {
@@ -83,18 +140,35 @@ const loadHotels = async () => {
   }
 }
 
-const loadUserBookings = async () => {
-  if (!auth.isLoggedIn) return
+const loadSoldOutRooms = async () => {
   try {
-    const customer = auth.isAdmin ? '' : auth.username
-    const list = await getBookings(customer, 0, 100)
+    const customer = auth.isLoggedIn ? (auth.isAdmin ? '' : auth.username) : ''
     const ids = new Set()
-    ;(list || []).forEach((b) => {
-      if (b?.status === 'BOOKED' && b?.room?.id) ids.add(b.room.id)
-    })
+    let page = 0
+    let hasMore = true
+    while (hasMore) {
+      const list = await getBookings(customer, page, 100, !auth.isLoggedIn)
+      const arr = Array.isArray(list) ? list : []
+      arr.forEach((b) => {
+        if (b?.status === 'BOOKED' && b?.room?.id) ids.add(b.room.id)
+      })
+      hasMore = arr.length >= 100
+      page++
+      if (page > 10) break
+    }
     userBookedRoomIds.value = ids
   } catch (_) {
     userBookedRoomIds.value = new Set()
+  }
+}
+
+const getDefaultDates = () => {
+  const today = new Date()
+  const tomorrow = new Date(today)
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  return {
+    checkIn: today.toISOString().slice(0, 10),
+    checkOut: tomorrow.toISOString().slice(0, 10),
   }
 }
 
@@ -109,7 +183,10 @@ const loadRooms = async () => {
   } finally {
     roomsLoading.value = false
   }
-  loadUserBookings()
+  loadSoldOutRooms()
+  const { checkIn, checkOut } = getDefaultDates()
+  if (!filterCheckIn.value) filterCheckIn.value = checkIn
+  if (!filterCheckOut.value) filterCheckOut.value = checkOut
 }
 
 onMounted(() => {
@@ -152,7 +229,17 @@ onMounted(() => {
             <option v-for="t in ROOM_TYPES" :key="t" :value="t">{{ t }}</option>
           </select>
         </div>
+        <div class="filter-date">
+          <label>Check-in</label>
+          <input v-model="filterCheckIn" type="date" class="filter-date-input" />
+        </div>
+        <div class="filter-date">
+          <label>Check-out</label>
+          <input v-model="filterCheckOut" type="date" class="filter-date-input" />
+        </div>
       </div>
+      <p v-if="hasDateFilter && !availabilityChecking" class="date-filter-hint">Menampilkan kamar tersedia untuk tanggal yang dipilih</p>
+      <p v-else-if="hasDateFilter && availabilityChecking" class="date-filter-hint">Memeriksa ketersediaan...</p>
       <p v-if="route.query.q" class="search-hint">Hasil untuk "{{ route.query.q }}"</p>
     </div>
 
@@ -160,15 +247,16 @@ onMounted(() => {
       <h2 class="section-title">Kamar Tersedia</h2>
       <p v-if="roomsLoading" class="no-results">Memuat kamar...</p>
       <p v-else-if="roomsError" class="section-hint">Tidak dapat memuat daftar kamar. Klik hotel untuk lihat kamar.</p>
+      <p v-else-if="hasDateFilter && !availabilityChecking && filteredRooms.length && filteredRooms.every((r) => isRoomDisabled(r))" class="no-results">Tidak ada kamar tersedia untuk tanggal ini</p>
       <p v-else-if="!filteredRooms.length" class="no-results">Tidak ada kamar</p>
       <div v-else class="rooms-list">
         <component
           v-for="r in filteredRooms"
           :key="r.id"
-          :is="userBookedRoomIds.has(r.id) ? 'div' : 'router-link'"
-          :to="userBookedRoomIds.has(r.id) ? undefined : { name: 'room', params: { id: r.id } }"
+          :is="isRoomDisabled(r) ? 'div' : 'router-link'"
+          :to="isRoomDisabled(r) ? undefined : { name: 'room', params: { id: r.id }, query: hasDateFilter ? { checkIn: filterCheckIn, checkOut: filterCheckOut } : {} }"
           class="room-item"
-          :class="{ 'room-item--sold': userBookedRoomIds.has(r.id) }"
+          :class="{ 'room-item--sold': isRoomDisabled(r) }"
         >
           <div class="room-item-main">
             <span class="room-item-type">{{ r.type }}</span>
@@ -176,7 +264,7 @@ onMounted(() => {
             <p class="room-item-hotel">{{ r.hotel?.name }} · {{ r.hotel?.location }}</p>
           </div>
           <div class="room-item-right">
-            <span v-if="userBookedRoomIds.has(r.id)" class="room-item-sold">Sudah terjual</span>
+            <span v-if="getRoomStatusLabel(r)" class="room-item-sold">{{ getRoomStatusLabel(r) }}</span>
             <div class="room-item-price">Rp {{ formatPrice(r.price) }}/malam</div>
           </div>
         </component>
@@ -246,6 +334,34 @@ onMounted(() => {
 .filter-location .filter-select:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+.filter-date label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.filter-date-input {
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 1rem;
+  min-width: 150px;
+}
+
+.filter-date-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.date-filter-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: -0.25rem 0 1rem 0;
 }
 
 .search-wrap .search-input {
@@ -342,7 +458,7 @@ onMounted(() => {
 
 .room-item--sold {
   opacity: 0.65;
-  cursor: default;
+  cursor: not-allowed;
   pointer-events: none;
 }
 

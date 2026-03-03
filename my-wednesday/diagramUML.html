@@ -1,0 +1,1932 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hotel Booking API – UML Editor</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      :root {
+        --bg: #0b0e1a;
+        --panel: #111525;
+        --panel2: #161b2e;
+        --border: #1e2640;
+        --accent: #4f8ef7;
+        --accent2: #9b6dff;
+        --accent3: #30d9a0;
+        --warn: #f7934f;
+        --text: #dde3f5;
+        --muted: #5a6490;
+        --node-bg: #141929;
+        --node-border: #2a3560;
+        --node-head: #1a2240;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: 'Syne', sans-serif;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      /* TOOLBAR */
+      #toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        z-index: 50;
+      }
+      #toolbar h1 {
+        font-size: 1rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-right: 8px;
+        white-space: nowrap;
+      }
+      .sep {
+        width: 1px;
+        height: 24px;
+        background: var(--border);
+        margin: 0 4px;
+      }
+      .tb-btn {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: 'Syne', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+      .tb-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .tb-btn.active {
+        background: rgba(79, 142, 247, 0.15);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      #zoom-label {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-family: 'JetBrains Mono', monospace;
+        min-width: 44px;
+        text-align: center;
+      }
+      .diagram-select {
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: 'Syne', sans-serif;
+        font-size: 0.78rem;
+        padding: 5px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .diagram-select option {
+        background: var(--panel);
+      }
+
+      /* BODY */
+      #app {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* SIDEBAR */
+      #sidebar {
+        width: 200px;
+        flex-shrink: 0;
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+        padding: 12px 0;
+      }
+      .sidebar-section {
+        padding: 0 12px 8px;
+      }
+      .sidebar-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .diagram-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.78rem;
+        transition: all 0.15s;
+        margin-bottom: 2px;
+        border: 1px solid transparent;
+      }
+      .diagram-item:hover {
+        background: rgba(79, 142, 247, 0.08);
+        border-color: var(--border);
+      }
+      .diagram-item.active {
+        background: rgba(79, 142, 247, 0.14);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .diagram-item .num {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--node-head);
+        flex-shrink: 0;
+      }
+      .diagram-item.active .num {
+        background: var(--accent);
+        color: #fff;
+      }
+      .chip {
+        font-size: 0.6rem;
+        padding: 1px 5px;
+        border-radius: 4px;
+        margin-left: auto;
+        font-weight: 600;
+        text-transform: uppercase;
+        border: 1px solid;
+        flex-shrink: 0;
+      }
+      .chip-erd {
+        color: #30d9a0;
+        border-color: rgba(48, 217, 160, 0.3);
+        background: rgba(48, 217, 160, 0.07);
+      }
+      .chip-class {
+        color: #9b6dff;
+        border-color: rgba(155, 109, 255, 0.3);
+        background: rgba(155, 109, 255, 0.07);
+      }
+      .chip-seq {
+        color: #f7934f;
+        border-color: rgba(247, 147, 79, 0.3);
+        background: rgba(247, 147, 79, 0.07);
+      }
+      .chip-flow {
+        color: #4f8ef7;
+        border-color: rgba(79, 142, 247, 0.3);
+        background: rgba(79, 142, 247, 0.07);
+      }
+
+      /* CANVAS */
+      #canvas-wrap {
+        flex: 1;
+        position: relative;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #canvas-wrap::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(79, 142, 247, 0.07) 1px, transparent 1px);
+        background-size: 28px 28px;
+        pointer-events: none;
+      }
+      #canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: 0 0;
+        cursor: default;
+      }
+      svg.connections {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        overflow: visible;
+        z-index: 0;
+      }
+
+      /* NODES */
+      .node {
+        position: absolute;
+        z-index: 1;
+        background: var(--node-bg);
+        border: 1.5px solid var(--node-border);
+        border-radius: 10px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px;
+        min-width: 160px;
+        cursor: grab;
+        user-select: none;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        transition:
+          box-shadow 0.15s,
+          border-color 0.15s;
+      }
+      .node:hover {
+        border-color: var(--accent);
+        box-shadow: 0 6px 28px rgba(79, 142, 247, 0.25);
+      }
+      .node.dragging {
+        cursor: grabbing;
+        z-index: 100;
+        box-shadow: 0 12px 40px rgba(79, 142, 247, 0.4);
+        border-color: var(--accent);
+      }
+      .node-head {
+        background: var(--node-head);
+        border-radius: 8px 8px 0 0;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--node-border);
+        font-family: 'Syne', sans-serif;
+        font-weight: 700;
+        font-size: 11.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .node-head .nt {
+        font-size: 9px;
+        font-weight: 600;
+        padding: 1px 5px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .nt-entity {
+        background: rgba(48, 217, 160, 0.12);
+        color: #30d9a0;
+        border: 1px solid rgba(48, 217, 160, 0.2);
+      }
+      .nt-resource {
+        background: rgba(79, 142, 247, 0.12);
+        color: #4f8ef7;
+        border: 1px solid rgba(79, 142, 247, 0.2);
+      }
+      .nt-service {
+        background: rgba(155, 109, 255, 0.12);
+        color: #9b6dff;
+        border: 1px solid rgba(155, 109, 255, 0.2);
+      }
+      .nt-repo {
+        background: rgba(247, 147, 79, 0.12);
+        color: #f7934f;
+        border: 1px solid rgba(247, 147, 79, 0.2);
+      }
+      .nt-dto {
+        background: rgba(255, 214, 79, 0.12);
+        color: #ffd64f;
+        border: 1px solid rgba(255, 214, 79, 0.2);
+      }
+      .nt-actor {
+        background: rgba(255, 100, 130, 0.12);
+        color: #ff6482;
+        border: 1px solid rgba(255, 100, 130, 0.2);
+      }
+      .node-body {
+        padding: 8px 12px;
+      }
+      .node-row {
+        padding: 3px 0;
+        color: var(--muted);
+        font-size: 10.5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        display: flex;
+        gap: 6px;
+        align-items: baseline;
+      }
+      .node-row:last-child {
+        border-bottom: none;
+      }
+      .node-row .type {
+        color: var(--accent);
+        font-size: 9.5px;
+      }
+      .node-row .field {
+        color: var(--text);
+      }
+      .node-row .method {
+        color: var(--accent3);
+      }
+      .node-section {
+        font-size: 9px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        padding: 4px 0 2px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2px;
+      }
+      .node-pk {
+        color: var(--warn) !important;
+      }
+      .node-fk {
+        color: var(--accent2) !important;
+      }
+
+      /* ARROW */
+      .arrow-line {
+        stroke-dasharray: none;
+        fill: none;
+      }
+
+      /* MINI-MAP */
+      #minimap {
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+        width: 160px;
+        height: 110px;
+        background: rgba(17, 21, 37, 0.9);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+        z-index: 10;
+      }
+      #minimap canvas {
+        width: 100%;
+        height: 100%;
+      }
+      #mm-viewport {
+        position: absolute;
+        border: 1.5px solid var(--accent);
+        border-radius: 2px;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+
+      /* STATUS */
+      #status {
+        position: absolute;
+        bottom: 16px;
+        left: 16px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 10px;
+        color: var(--muted);
+        background: rgba(17, 21, 37, 0.8);
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      /* TOOLTIP */
+      #tooltip {
+        position: absolute;
+        display: none;
+        background: var(--panel2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 11px;
+        color: var(--text);
+        pointer-events: none;
+        z-index: 200;
+        max-width: 220px;
+        font-family: 'JetBrains Mono', monospace;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      }
+
+      /* scrollbar */
+      #sidebar::-webkit-scrollbar {
+        width: 4px;
+      }
+      #sidebar::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <h1>🏨 Hotel Booking UML</h1>
+      <div class="sep"></div>
+      <button class="tb-btn" onclick="zoomIn()">＋ Zoom</button>
+      <span id="zoom-label">100%</span>
+      <button class="tb-btn" onclick="zoomOut()">－ Zoom</button>
+      <button class="tb-btn" onclick="resetView()">⌂ Reset</button>
+      <div class="sep"></div>
+      <button class="tb-btn" onclick="autoLayout()">⚡ Auto Layout</button>
+      <button class="tb-btn" onclick="fitView()">⊡ Fit</button>
+      <div class="sep"></div>
+      <span style="font-size: 0.75rem; color: var(--muted)">Diagram:</span>
+      <select class="diagram-select" onchange="loadDiagram(this.value)" id="diag-select">
+        <option value="erd">1. Entity Relationship (ERD)</option>
+        <option value="class-entity">2. Class – Entity & DTO</option>
+        <option value="class-layer">3. Class – Layer Architecture</option>
+        <option value="seq-login">4. Sequence – Login</option>
+        <option value="seq-booking">5. Sequence – Create Booking</option>
+        <option value="seq-rooms">6. Sequence – Get Rooms</option>
+        <option value="arch">7. Arsitektur Lapisan</option>
+        <option value="usecase">8. Use Case</option>
+      </select>
+    </div>
+
+    <div id="app">
+      <div id="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Diagrams</div>
+          <div class="diagram-item active" onclick="selectDiag('erd', this)">
+            <span class="num">1</span>ERD<span class="chip chip-erd">ERD</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('class-entity', this)">
+            <span class="num">2</span>Entity & DTO<span class="chip chip-class">Class</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('class-layer', this)">
+            <span class="num">3</span>Layers<span class="chip chip-class">Class</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('seq-login', this)">
+            <span class="num">4</span>Login<span class="chip chip-seq">Seq</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('seq-booking', this)">
+            <span class="num">5</span>Booking<span class="chip chip-seq">Seq</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('seq-rooms', this)">
+            <span class="num">6</span>Get Rooms<span class="chip chip-seq">Seq</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('arch', this)">
+            <span class="num">7</span>Arsitektur<span class="chip chip-flow">Flow</span>
+          </div>
+          <div class="diagram-item" onclick="selectDiag('usecase', this)">
+            <span class="num">8</span>Use Case<span class="chip chip-flow">Flow</span>
+          </div>
+        </div>
+        <div class="sep" style="width: auto; height: 1px; margin: 4px 12px 12px"></div>
+        <div class="sidebar-section">
+          <div class="sidebar-label">Legend</div>
+          <div style="display: flex; flex-direction: column; gap: 5px; font-size: 0.7rem">
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #30d9a0;
+                  display: inline-block;
+                "
+              ></span
+              >Entity
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #4f8ef7;
+                  display: inline-block;
+                "
+              ></span
+              >Resource
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #9b6dff;
+                  display: inline-block;
+                "
+              ></span
+              >Service
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #f7934f;
+                  display: inline-block;
+                "
+              ></span
+              >Repository
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #ffd64f;
+                  display: inline-block;
+                "
+              ></span
+              >DTO
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px">
+              <span
+                style="
+                  width: 8px;
+                  height: 8px;
+                  border-radius: 50%;
+                  background: #ff6482;
+                  display: inline-block;
+                "
+              ></span
+              >Actor
+            </div>
+          </div>
+          <div style="margin-top: 12px; font-size: 0.68rem; color: var(--muted); line-height: 1.6">
+            <div>🖱️ Drag node to move</div>
+            <div>🖱️ Drag canvas to pan</div>
+            <div>🖱️ Scroll to zoom</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="canvas-wrap">
+        <div id="canvas">
+          <svg class="connections" id="svg-layer"></svg>
+        </div>
+        <div id="status">x:0 y:0 | zoom:100%</div>
+        <div id="minimap">
+          <canvas id="mm-canvas" width="160" height="110"></canvas>
+          <div id="mm-viewport"></div>
+        </div>
+        <div id="tooltip"></div>
+      </div>
+    </div>
+
+    <script>
+      // ============================================================
+      // STATE
+      // ============================================================
+      let scale = 1,
+        panX = 0,
+        panY = 0
+      let isPanning = false,
+        panStart = { x: 0, y: 0 }
+      let dragNode = null,
+        dragOffset = { x: 0, y: 0 }
+      let nodes = [],
+        connections = []
+      let currentDiagram = 'erd'
+
+      const canvas = document.getElementById('canvas')
+      const wrap = document.getElementById('canvas-wrap')
+      let svgLayer = document.getElementById('svg-layer')
+      const statusEl = document.getElementById('status')
+      const tooltip = document.getElementById('tooltip')
+
+      // ============================================================
+      // DIAGRAM DEFINITIONS
+      // ============================================================
+      const DIAGRAMS = {
+        erd: {
+          title: 'Entity Relationship Diagram',
+          nodes: [
+            {
+              id: 'hotel',
+              x: 80,
+              y: 120,
+              label: 'hotel',
+              type: 'entity',
+              fields: [
+                { name: 'id', type: 'UUID', tag: 'PK' },
+                { name: 'name', type: 'string' },
+                { name: 'location', type: 'string' },
+              ],
+            },
+            {
+              id: 'room',
+              x: 400,
+              y: 80,
+              label: 'room',
+              type: 'entity',
+              fields: [
+                { name: 'id', type: 'UUID', tag: 'PK' },
+                { name: 'roomNumber', type: 'string' },
+                { name: 'type', type: 'string' },
+                { name: 'price', type: 'double' },
+                { name: 'hotel_id', type: 'UUID', tag: 'FK' },
+              ],
+            },
+            {
+              id: 'booking',
+              x: 720,
+              y: 120,
+              label: 'booking',
+              type: 'entity',
+              fields: [
+                { name: 'id', type: 'UUID', tag: 'PK' },
+                { name: 'room_id', type: 'UUID', tag: 'FK' },
+                { name: 'customerName', type: 'string' },
+                { name: 'checkInDate', type: 'date' },
+                { name: 'checkOutDate', type: 'date' },
+                { name: 'status', type: 'string' },
+              ],
+            },
+            {
+              id: 'users',
+              x: 400,
+              y: 360,
+              label: 'users',
+              type: 'entity',
+              fields: [
+                { name: 'id', type: 'UUID', tag: 'PK' },
+                { name: 'username', type: 'string', tag: 'UK' },
+                { name: 'passwordHash', type: 'string' },
+                { name: 'name', type: 'string' },
+                { name: 'role', type: 'string' },
+              ],
+            },
+          ],
+          connections: [
+            { from: 'hotel', to: 'room', label: '1 ——< punya', color: '#30d9a0' },
+            { from: 'room', to: 'booking', label: '1 ——< dibooking', color: '#4f8ef7' },
+          ],
+        },
+
+        'class-entity': {
+          title: 'Class Diagram – Entity & DTO',
+          nodes: [
+            {
+              id: 'base',
+              x: 350,
+              y: 20,
+              label: 'UuidPanacheEntity',
+              type: 'entity',
+              sub: 'abstract',
+              fields: [{ name: 'id', type: 'UUID', section: 'fields' }],
+            },
+            {
+              id: 'hotel',
+              x: 60,
+              y: 200,
+              label: 'Hotel',
+              type: 'entity',
+              fields: [
+                { name: 'name', type: 'String' },
+                { name: 'location', type: 'String' },
+              ],
+            },
+            {
+              id: 'room',
+              x: 330,
+              y: 200,
+              label: 'Room',
+              type: 'entity',
+              fields: [
+                { name: 'roomNumber', type: 'String' },
+                { name: 'type', type: 'String' },
+                { name: 'price', type: 'double' },
+                { name: 'hotel', type: 'Hotel' },
+              ],
+            },
+            {
+              id: 'booking',
+              x: 590,
+              y: 200,
+              label: 'Booking',
+              type: 'entity',
+              fields: [
+                { name: 'room', type: 'Room' },
+                { name: 'customerName', type: 'String' },
+                { name: 'checkInDate', type: 'LocalDate' },
+                { name: 'checkOutDate', type: 'LocalDate' },
+                { name: 'status', type: 'String' },
+              ],
+            },
+            {
+              id: 'user',
+              x: 840,
+              y: 200,
+              label: 'User',
+              type: 'entity',
+              fields: [
+                { name: 'username', type: 'String' },
+                { name: 'passwordHash', type: 'String' },
+                { name: 'name', type: 'String' },
+                { name: 'role', type: 'String' },
+                { name: 'findByUsername()', type: 'method', isMethod: true },
+              ],
+            },
+            {
+              id: 'hotelDto',
+              x: 60,
+              y: 440,
+              label: 'HotelRequestDto',
+              type: 'dto',
+              fields: [
+                { name: 'name', type: 'String' },
+                { name: 'location', type: 'String' },
+              ],
+            },
+            {
+              id: 'roomDto',
+              x: 280,
+              y: 440,
+              label: 'RoomRequestDto',
+              type: 'dto',
+              fields: [
+                { name: 'roomNumber', type: 'String' },
+                { name: 'type', type: 'String' },
+                { name: 'price', type: 'Double' },
+                { name: 'hotelId', type: 'UUID' },
+              ],
+            },
+            {
+              id: 'bookingDto',
+              x: 520,
+              y: 440,
+              label: 'BookingRequestDto',
+              type: 'dto',
+              fields: [
+                { name: 'roomId', type: 'UUID' },
+                { name: 'checkInDate', type: 'LocalDate' },
+                { name: 'checkOutDate', type: 'LocalDate' },
+                { name: 'customerName', type: 'String' },
+              ],
+            },
+            {
+              id: 'pageResp',
+              x: 760,
+              y: 440,
+              label: 'PageResponse',
+              type: 'dto',
+              fields: [
+                { name: 'content', type: 'List' },
+                { name: 'page', type: 'int' },
+                { name: 'size', type: 'int' },
+                { name: 'totalElements', type: 'long' },
+                { name: 'totalPages', type: 'int' },
+              ],
+            },
+          ],
+          connections: [
+            { from: 'base', to: 'hotel', label: 'extends', style: 'triangle' },
+            { from: 'base', to: 'room', label: 'extends', style: 'triangle' },
+            { from: 'base', to: 'booking', label: 'extends', style: 'triangle' },
+            { from: 'base', to: 'user', label: 'extends', style: 'triangle' },
+            { from: 'hotel', to: 'room', label: '1 → *', color: '#30d9a0' },
+            { from: 'room', to: 'booking', label: '1 → *', color: '#4f8ef7' },
+          ],
+        },
+
+        'class-layer': {
+          title: 'Class Diagram – Layer Architecture',
+          nodes: [
+            // Resources
+            {
+              id: 'authR',
+              x: 20,
+              y: 20,
+              label: 'AuthResource',
+              type: 'resource',
+              fields: [
+                { name: 'authService', type: 'AuthService', isField: true },
+                { name: 'jwt', type: 'JsonWebToken', isField: true },
+                { name: 'login()', type: 'method', isMethod: true },
+                { name: 'register()', type: 'method', isMethod: true },
+                { name: 'me()', type: 'method', isMethod: true },
+              ],
+            },
+            {
+              id: 'hotelR',
+              x: 20,
+              y: 230,
+              label: 'HotelResource',
+              type: 'resource',
+              fields: [
+                { name: 'hotelRepository', type: 'HotelRepo', isField: true },
+                { name: 'roomRepository', type: 'RoomRepo', isField: true },
+                { name: 'getHotels()', type: 'method', isMethod: true },
+                { name: 'createHotel()', type: 'method', isMethod: true },
+                { name: 'updateHotel()', type: 'method', isMethod: true },
+                { name: 'deleteHotel()', type: 'method', isMethod: true },
+                { name: 'getRoomsByHotel()', type: 'method', isMethod: true },
+              ],
+            },
+            {
+              id: 'roomR',
+              x: 20,
+              y: 490,
+              label: 'RoomResource',
+              type: 'resource',
+              fields: [
+                { name: 'roomRepository', type: 'RoomRepo', isField: true },
+                { name: 'hotelRepository', type: 'HotelRepo', isField: true },
+                { name: 'bookingRepository', type: 'BookingRepo', isField: true },
+                { name: 'getAllRooms()', type: 'method', isMethod: true },
+                { name: 'addRoom()', type: 'method', isMethod: true },
+                { name: 'checkAvailability()', type: 'method', isMethod: true },
+              ],
+            },
+            {
+              id: 'bookingR',
+              x: 20,
+              y: 720,
+              label: 'BookingResource',
+              type: 'resource',
+              fields: [
+                { name: 'bookingService', type: 'BookingService', isField: true },
+                { name: 'jwt', type: 'JsonWebToken', isField: true },
+                { name: 'getBookings()', type: 'method', isMethod: true },
+                { name: 'createBooking()', type: 'method', isMethod: true },
+                { name: 'cancelBooking()', type: 'method', isMethod: true },
+              ],
+            },
+            // Services
+            {
+              id: 'authS',
+              x: 330,
+              y: 20,
+              label: 'AuthService',
+              type: 'service',
+              fields: [
+                { name: 'login()', type: 'method', isMethod: true },
+                { name: 'register()', type: 'method', isMethod: true },
+                { name: 'generateToken()', type: 'method', isMethod: true },
+              ],
+            },
+            {
+              id: 'bookingS',
+              x: 330,
+              y: 600,
+              label: 'BookingService',
+              type: 'service',
+              fields: [
+                { name: 'bookingRepository', type: 'BookingRepo', isField: true },
+                { name: 'roomRepository', type: 'RoomRepo', isField: true },
+                { name: 'entityManager', type: 'EntityManager', isField: true },
+                { name: 'createBooking()', type: 'method', isMethod: true },
+                { name: 'cancelBooking()', type: 'method', isMethod: true },
+              ],
+            },
+            // Repositories
+            {
+              id: 'hotelRepo',
+              x: 620,
+              y: 100,
+              label: 'HotelRepository',
+              type: 'repo',
+              fields: [{ name: 'findAll(Page)', type: 'method', isMethod: true }],
+            },
+            {
+              id: 'roomRepo',
+              x: 620,
+              y: 300,
+              label: 'RoomRepository',
+              type: 'repo',
+              fields: [
+                { name: 'findByHotel()', type: 'method', isMethod: true },
+                { name: 'findByHotel(hotelId,Page)', type: 'method', isMethod: true },
+                { name: 'countByHotel()', type: 'method', isMethod: true },
+              ],
+            },
+            {
+              id: 'bookingRepo',
+              x: 620,
+              y: 520,
+              label: 'BookingRepository',
+              type: 'repo',
+              fields: [
+                { name: 'findActiveBookings()', type: 'method', isMethod: true },
+                { name: 'isRoomAvailable()', type: 'method', isMethod: true },
+                { name: 'findAll(Page)', type: 'method', isMethod: true },
+              ],
+            },
+          ],
+          connections: [
+            { from: 'authR', to: 'authS', label: 'uses' },
+            { from: 'bookingR', to: 'bookingS', label: 'uses' },
+            { from: 'bookingR', to: 'bookingRepo', label: 'uses' },
+            { from: 'hotelR', to: 'hotelRepo', label: 'uses' },
+            { from: 'hotelR', to: 'roomRepo', label: 'uses' },
+            { from: 'roomR', to: 'roomRepo', label: 'uses' },
+            { from: 'roomR', to: 'hotelRepo', label: 'uses' },
+            { from: 'roomR', to: 'bookingRepo', label: 'uses' },
+            { from: 'bookingS', to: 'bookingRepo', label: 'uses' },
+            { from: 'bookingS', to: 'roomRepo', label: 'uses' },
+          ],
+        },
+
+        'seq-login': {
+          title: 'Sequence – Login Flow',
+          nodes: [
+            {
+              id: 'client',
+              x: 60,
+              y: 60,
+              label: 'Client',
+              type: 'actor',
+              fields: [{ name: 'Frontend / Swagger', type: '' }],
+            },
+            {
+              id: 'authR',
+              x: 260,
+              y: 60,
+              label: 'AuthResource',
+              type: 'resource',
+              fields: [{ name: 'POST /auth/login', type: '' }],
+            },
+            {
+              id: 'authS',
+              x: 460,
+              y: 60,
+              label: 'AuthService',
+              type: 'service',
+              fields: [{ name: 'login(username,pwd)', type: '' }],
+            },
+            {
+              id: 'user',
+              x: 660,
+              y: 60,
+              label: 'User',
+              type: 'entity',
+              fields: [{ name: 'findByUsername()', type: '' }],
+            },
+            // Lifeline steps
+            {
+              id: 'step1',
+              x: 60,
+              y: 200,
+              label: '① Request',
+              type: 'dto',
+              fields: [
+                { name: 'POST /auth/login', type: '' },
+                { name: '{ username, password }', type: '' },
+              ],
+            },
+            {
+              id: 'step2',
+              x: 460,
+              y: 290,
+              label: '② Validate',
+              type: 'dto',
+              fields: [
+                { name: 'findByUsername()', type: '' },
+                { name: 'verify password', type: '' },
+              ],
+            },
+            {
+              id: 'step3alt',
+              x: 260,
+              y: 400,
+              label: 'Alt: User Not Found',
+              type: 'dto',
+              fields: [
+                { name: 'throw 401', type: '' },
+                { name: '401 Unauthorized', type: '' },
+              ],
+            },
+            {
+              id: 'step4',
+              x: 460,
+              y: 520,
+              label: '③ Generate Token',
+              type: 'service',
+              fields: [
+                { name: 'generateToken(user)', type: '' },
+                { name: 'return JWT token', type: '' },
+              ],
+            },
+            {
+              id: 'step5',
+              x: 60,
+              y: 640,
+              label: '④ Response 200',
+              type: 'dto',
+              fields: [
+                { name: '{ token, username,', type: '' },
+                { name: '  name, role }', type: '' },
+              ],
+            },
+          ],
+          connections: [
+            { from: 'client', to: 'authR', label: 'POST /auth/login', color: '#4f8ef7' },
+            { from: 'authR', to: 'authS', label: 'login(username, pwd)', color: '#9b6dff' },
+            { from: 'authS', to: 'user', label: 'findByUsername()', color: '#30d9a0' },
+            { from: 'step1', to: 'step2', label: 'forward', color: '#4f8ef7' },
+            { from: 'step2', to: 'step3alt', label: 'if invalid', color: '#f7934f' },
+            { from: 'step2', to: 'step4', label: 'if valid', color: '#30d9a0' },
+            { from: 'step4', to: 'step5', label: '200 + token', color: '#30d9a0' },
+          ],
+        },
+
+        'seq-booking': {
+          title: 'Sequence – Create Booking',
+          nodes: [
+            {
+              id: 'client',
+              x: 20,
+              y: 40,
+              label: 'Client',
+              type: 'actor',
+              fields: [{ name: 'Frontend', type: '' }],
+            },
+            {
+              id: 'bookR',
+              x: 200,
+              y: 40,
+              label: 'BookingResource',
+              type: 'resource',
+              fields: [{ name: 'POST /bookings', type: '' }],
+            },
+            {
+              id: 'bookS',
+              x: 420,
+              y: 40,
+              label: 'BookingService',
+              type: 'service',
+              fields: [{ name: 'createBooking()', type: '' }],
+            },
+            {
+              id: 'em',
+              x: 620,
+              y: 40,
+              label: 'EntityManager',
+              type: 'dto',
+              fields: [{ name: 'PESSIMISTIC_WRITE', type: '' }],
+            },
+            {
+              id: 'bookRepo',
+              x: 820,
+              y: 40,
+              label: 'BookingRepository',
+              type: 'repo',
+              fields: [{ name: 'findActive()', type: '' }],
+            },
+            {
+              id: 's1',
+              x: 20,
+              y: 200,
+              label: '① POST /bookings',
+              type: 'dto',
+              fields: [
+                { name: 'roomId, checkIn,', type: '' },
+                { name: 'checkOut + Bearer', type: '' },
+              ],
+            },
+            {
+              id: 's2',
+              x: 420,
+              y: 290,
+              label: '② Lock Room',
+              type: 'dto',
+              fields: [{ name: 'find(Room, PESSIMISTIC_WRITE)', type: '' }],
+            },
+            {
+              id: 's3',
+              x: 420,
+              y: 390,
+              label: '③ Check Conflicts',
+              type: 'dto',
+              fields: [{ name: 'findActiveBookings()', type: '' }],
+            },
+            {
+              id: 's4err',
+              x: 200,
+              y: 480,
+              label: 'Alt: Conflict / Not Found',
+              type: 'dto',
+              fields: [
+                { name: 'throw 400 "already booked"', type: '' },
+                { name: 'throw 404 if not found', type: '' },
+              ],
+            },
+            {
+              id: 's5',
+              x: 420,
+              y: 580,
+              label: '④ Create Booking',
+              type: 'service',
+              fields: [
+                { name: 'new Booking()', type: '' },
+                { name: 'status = BOOKED', type: '' },
+                { name: 'persist(booking)', type: '' },
+              ],
+            },
+            {
+              id: 's6',
+              x: 20,
+              y: 700,
+              label: '⑤ Response 200',
+              type: 'dto',
+              fields: [{ name: 'Booking JSON', type: '' }],
+            },
+          ],
+          connections: [
+            { from: 'client', to: 'bookR', label: 'POST /bookings + token', color: '#4f8ef7' },
+            { from: 'bookR', to: 'bookS', label: 'createBooking()', color: '#9b6dff' },
+            { from: 'bookS', to: 'em', label: 'PESSIMISTIC_WRITE lock', color: '#f7934f' },
+            { from: 'bookS', to: 'bookRepo', label: 'findActiveBookings()', color: '#30d9a0' },
+            { from: 's1', to: 's2', label: '', color: '#4f8ef7' },
+            { from: 's2', to: 's3', label: 'room found', color: '#30d9a0' },
+            { from: 's3', to: 's4err', label: 'conflict detected', color: '#f7934f' },
+            { from: 's3', to: 's5', label: 'no conflict', color: '#30d9a0' },
+            { from: 's5', to: 's6', label: '200 Booking', color: '#30d9a0' },
+          ],
+        },
+
+        'seq-rooms': {
+          title: 'Sequence – Get Rooms by Hotel',
+          nodes: [
+            {
+              id: 'client',
+              x: 80,
+              y: 60,
+              label: 'Client',
+              type: 'actor',
+              fields: [{ name: 'Frontend', type: '' }],
+            },
+            {
+              id: 'hotelR',
+              x: 320,
+              y: 60,
+              label: 'HotelResource',
+              type: 'resource',
+              fields: [{ name: 'GET /hotels/{id}/rooms', type: '' }],
+            },
+            {
+              id: 'roomRepo',
+              x: 580,
+              y: 60,
+              label: 'RoomRepository',
+              type: 'repo',
+              fields: [{ name: 'Panache', type: '' }],
+            },
+            {
+              id: 's1',
+              x: 80,
+              y: 200,
+              label: '① Request',
+              type: 'dto',
+              fields: [
+                { name: 'GET /hotels/{hotelId}/rooms', type: '' },
+                { name: '?page=0&size=20', type: '' },
+              ],
+            },
+            {
+              id: 's2',
+              x: 580,
+              y: 300,
+              label: '② Query DB',
+              type: 'repo',
+              fields: [
+                { name: 'find("hotel.id", hotelId)', type: '' },
+                { name: '.page(page).list()', type: '' },
+              ],
+            },
+            {
+              id: 's3',
+              x: 580,
+              y: 430,
+              label: '③ Count Total',
+              type: 'repo',
+              fields: [{ name: 'countByHotel(hotelId)', type: '' }],
+            },
+            {
+              id: 's4',
+              x: 320,
+              y: 540,
+              label: '④ Build Response',
+              type: 'dto',
+              fields: [
+                { name: 'new PageResponse(', type: '' },
+                { name: '  content, page,', type: '' },
+                { name: '  size, total)', type: '' },
+              ],
+            },
+            {
+              id: 's5',
+              x: 80,
+              y: 660,
+              label: '⑤ 200 PageResponse',
+              type: 'dto',
+              fields: [
+                { name: '{ content: [...rooms],', type: '' },
+                { name: '  totalPages, page }', type: '' },
+              ],
+            },
+          ],
+          connections: [
+            { from: 'client', to: 'hotelR', label: 'GET /hotels/{id}/rooms', color: '#4f8ef7' },
+            {
+              from: 'hotelR',
+              to: 'roomRepo',
+              label: 'findByHotel(hotelId, Page)',
+              color: '#f7934f',
+            },
+            { from: 'roomRepo', to: 'hotelR', label: 'List<Room>', color: '#30d9a0' },
+            { from: 's1', to: 's2', label: 'query rooms', color: '#4f8ef7' },
+            { from: 's2', to: 's3', label: 'List<Room> returned', color: '#30d9a0' },
+            { from: 's3', to: 's4', label: 'count returned', color: '#30d9a0' },
+            { from: 's4', to: 's5', label: '200 PageResponse', color: '#30d9a0' },
+          ],
+        },
+
+        arch: {
+          title: 'Arsitektur Lapisan',
+          nodes: [
+            {
+              id: 'fe',
+              x: 380,
+              y: 20,
+              label: 'Frontend / Swagger',
+              type: 'actor',
+              fields: [{ name: 'Client Layer', type: '' }],
+            },
+            {
+              id: 'authR',
+              x: 60,
+              y: 160,
+              label: 'AuthResource',
+              type: 'resource',
+              fields: [{ name: 'JAX-RS', type: '' }],
+            },
+            {
+              id: 'hotelR',
+              x: 240,
+              y: 160,
+              label: 'HotelResource',
+              type: 'resource',
+              fields: [{ name: 'JAX-RS', type: '' }],
+            },
+            {
+              id: 'roomR',
+              x: 420,
+              y: 160,
+              label: 'RoomResource',
+              type: 'resource',
+              fields: [{ name: 'JAX-RS', type: '' }],
+            },
+            {
+              id: 'bookR',
+              x: 600,
+              y: 160,
+              label: 'BookingResource',
+              type: 'resource',
+              fields: [{ name: 'JAX-RS', type: '' }],
+            },
+            {
+              id: 'authS',
+              x: 150,
+              y: 320,
+              label: 'AuthService',
+              type: 'service',
+              fields: [{ name: 'Business Logic', type: '' }],
+            },
+            {
+              id: 'bookS',
+              x: 510,
+              y: 320,
+              label: 'BookingService',
+              type: 'service',
+              fields: [{ name: 'Business Logic', type: '' }],
+            },
+            {
+              id: 'hotelRepo',
+              x: 60,
+              y: 480,
+              label: 'HotelRepository',
+              type: 'repo',
+              fields: [{ name: 'Panache', type: '' }],
+            },
+            {
+              id: 'roomRepo',
+              x: 280,
+              y: 480,
+              label: 'RoomRepository',
+              type: 'repo',
+              fields: [{ name: 'Panache', type: '' }],
+            },
+            {
+              id: 'bookRepo',
+              x: 500,
+              y: 480,
+              label: 'BookingRepository',
+              type: 'repo',
+              fields: [{ name: 'Panache', type: '' }],
+            },
+            {
+              id: 'hotelE',
+              x: 60,
+              y: 640,
+              label: 'Hotel',
+              type: 'entity',
+              fields: [{ name: 'Entity / DB', type: '' }],
+            },
+            {
+              id: 'roomE',
+              x: 240,
+              y: 640,
+              label: 'Room',
+              type: 'entity',
+              fields: [{ name: 'Entity / DB', type: '' }],
+            },
+            {
+              id: 'bookE',
+              x: 420,
+              y: 640,
+              label: 'Booking',
+              type: 'entity',
+              fields: [{ name: 'Entity / DB', type: '' }],
+            },
+            {
+              id: 'userE',
+              x: 600,
+              y: 640,
+              label: 'User',
+              type: 'entity',
+              fields: [{ name: 'Entity / DB', type: '' }],
+            },
+          ],
+          connections: [
+            { from: 'fe', to: 'authR', label: '' },
+            { from: 'fe', to: 'hotelR', label: '' },
+            { from: 'fe', to: 'roomR', label: '' },
+            { from: 'fe', to: 'bookR', label: '' },
+            { from: 'authR', to: 'authS', label: '' },
+            { from: 'bookR', to: 'bookS', label: '' },
+            { from: 'bookR', to: 'bookRepo', label: '' },
+            { from: 'hotelR', to: 'hotelRepo', label: '' },
+            { from: 'hotelR', to: 'roomRepo', label: '' },
+            { from: 'roomR', to: 'roomRepo', label: '' },
+            { from: 'roomR', to: 'hotelRepo', label: '' },
+            { from: 'roomR', to: 'bookRepo', label: '' },
+            { from: 'authS', to: 'userE', label: '' },
+            { from: 'bookS', to: 'bookRepo', label: '' },
+            { from: 'bookS', to: 'roomRepo', label: '' },
+            { from: 'hotelRepo', to: 'hotelE', label: '' },
+            { from: 'roomRepo', to: 'roomE', label: '' },
+            { from: 'bookRepo', to: 'bookE', label: '' },
+          ],
+        },
+
+        usecase: {
+          title: 'Use Case Diagram',
+          nodes: [
+            {
+              id: 'browse',
+              x: 100,
+              y: 80,
+              label: 'Browse Hotels',
+              type: 'entity',
+              fields: [{ name: 'GET /hotels', type: '' }],
+            },
+            {
+              id: 'rooms',
+              x: 100,
+              y: 220,
+              label: 'Lihat Kamar',
+              type: 'entity',
+              fields: [{ name: 'GET /hotels/{id}/rooms', type: '' }],
+            },
+            {
+              id: 'avail',
+              x: 100,
+              y: 360,
+              label: 'Cek Ketersediaan',
+              type: 'entity',
+              fields: [{ name: 'GET /rooms/{id}/availability', type: '' }],
+            },
+            {
+              id: 'book',
+              x: 100,
+              y: 500,
+              label: 'Buat Booking',
+              type: 'entity',
+              fields: [{ name: 'POST /bookings', type: '' }],
+            },
+            {
+              id: 'cancel',
+              x: 100,
+              y: 640,
+              label: 'Batalkan Booking',
+              type: 'entity',
+              fields: [{ name: 'PATCH /bookings/{id}/cancel', type: '' }],
+            },
+            {
+              id: 'crudHotel',
+              x: 450,
+              y: 80,
+              label: 'CRUD Hotel',
+              type: 'resource',
+              fields: [{ name: 'Admin Only', type: '' }],
+            },
+            {
+              id: 'crudRoom',
+              x: 450,
+              y: 240,
+              label: 'CRUD Room',
+              type: 'resource',
+              fields: [{ name: 'Admin Only', type: '' }],
+            },
+            {
+              id: 'allBook',
+              x: 450,
+              y: 400,
+              label: 'Lihat Semua Booking',
+              type: 'resource',
+              fields: [{ name: 'Admin Only', type: '' }],
+            },
+            {
+              id: 'customer',
+              x: 760,
+              y: 340,
+              label: '👤 Customer',
+              type: 'actor',
+              fields: [{ name: 'Authenticated User', type: '' }],
+            },
+            {
+              id: 'admin',
+              x: 760,
+              y: 180,
+              label: '👑 Admin',
+              type: 'actor',
+              fields: [{ name: 'Admin Role', type: '' }],
+            },
+          ],
+          connections: [
+            { from: 'browse', to: 'rooms', label: '→' },
+            { from: 'rooms', to: 'avail', label: '→' },
+            { from: 'avail', to: 'book', label: '→' },
+            { from: 'book', to: 'cancel', label: '→' },
+            { from: 'customer', to: 'browse', label: 'can' },
+            { from: 'customer', to: 'book', label: 'can' },
+            { from: 'customer', to: 'cancel', label: 'can' },
+            { from: 'admin', to: 'crudHotel', label: 'manages' },
+            { from: 'admin', to: 'crudRoom', label: 'manages' },
+            { from: 'admin', to: 'allBook', label: 'views' },
+          ],
+        },
+      }
+
+      // ============================================================
+      // TYPE COLORS
+      // ============================================================
+      const TYPE_COLOR = {
+        entity: '#30d9a0',
+        resource: '#4f8ef7',
+        service: '#9b6dff',
+        repo: '#f7934f',
+        dto: '#ffd64f',
+        actor: '#ff6482',
+      }
+      const TYPE_LABEL = {
+        entity: 'Entity',
+        resource: 'Resource',
+        service: 'Service',
+        repo: 'Repository',
+        dto: 'DTO',
+        actor: 'Actor',
+      }
+      const TYPE_CLASS = {
+        entity: 'nt-entity',
+        resource: 'nt-resource',
+        service: 'nt-service',
+        repo: 'nt-repo',
+        dto: 'nt-dto',
+        actor: 'nt-actor',
+      }
+
+      // ============================================================
+      // RENDER NODES
+      // ============================================================
+      function renderNode(n) {
+        const el = document.createElement('div')
+        el.className = 'node'
+        el.id = 'node-' + n.id
+        el.style.left = n.x + 'px'
+        el.style.top = n.y + 'px'
+
+        const tc = TYPE_CLASS[n.type] || 'nt-entity'
+        const tl = TYPE_LABEL[n.type] || n.type
+
+        let fieldsHtml = ''
+        let inMethods = false
+        ;(n.fields || []).forEach((f) => {
+          if (f.isMethod && !inMethods) {
+            fieldsHtml += `<div class="node-section">methods</div>`
+            inMethods = true
+          }
+          const tagHtml = f.tag
+            ? `<span class="node-${f.tag.toLowerCase()} type">[${f.tag}]</span>`
+            : ''
+          const nameClass = f.isMethod ? 'method' : 'field'
+          const typeHtml = f.type && !f.isMethod ? `<span class="type">${f.type}</span>` : ''
+          fieldsHtml += `<div class="node-row">${tagHtml}<span class="${nameClass}">${f.name}</span>${typeHtml}</div>`
+        })
+
+        const subHtml = n.sub
+          ? `<span style="font-size:9px;color:var(--muted);font-style:italic">&lt;&lt;${n.sub}&gt;&gt;</span><br>`
+          : ''
+
+        el.innerHTML = `
+    <div class="node-head" style="border-left:3px solid ${TYPE_COLOR[n.type] || '#4f8ef7'}">
+      ${subHtml}<span>${n.label}</span>
+      <span class="nt ${tc}">${tl}</span>
+    </div>
+    <div class="node-body">${fieldsHtml}</div>`
+
+        // Drag
+        el.addEventListener('mousedown', (e) => {
+          if (e.button !== 0) return
+          e.stopPropagation()
+          dragNode = n
+          const rect = el.getBoundingClientRect()
+          dragOffset.x = e.clientX - rect.left
+          dragOffset.y = e.clientY - rect.top
+          el.classList.add('dragging')
+        })
+
+        canvas.appendChild(el)
+        return el
+      }
+
+      // ============================================================
+      // RENDER CONNECTIONS (SVG arrows)
+      // ============================================================
+      function renderConnections() {
+        svgLayer = document.getElementById('svg-layer') || svgLayer
+        svgLayer.innerHTML = ''
+        // defs for arrowhead
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+        const colors = ['#4f8ef7', '#30d9a0', '#9b6dff', '#f7934f', '#ffd64f', '#ff6482', '#aaa']
+        colors.forEach((c) => {
+          const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker')
+          const id = 'arrow-' + c.replace('#', '')
+          marker.setAttribute('id', id)
+          marker.setAttribute('markerWidth', '8')
+          marker.setAttribute('markerHeight', '8')
+          marker.setAttribute('refX', '6')
+          marker.setAttribute('refY', '3')
+          marker.setAttribute('orient', 'auto')
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+          path.setAttribute('d', 'M0,0 L0,6 L8,3 z')
+          path.setAttribute('fill', c)
+          marker.appendChild(path)
+          defs.appendChild(marker)
+        })
+        svgLayer.appendChild(defs)
+
+        connections.forEach((conn) => {
+          const fromEl = document.getElementById('node-' + conn.from)
+          const toEl = document.getElementById('node-' + conn.to)
+          if (!fromEl || !toEl) return
+
+          const fromNode = nodes.find((n) => n.id === conn.from)
+          const toNode = nodes.find((n) => n.id === conn.to)
+          if (!fromNode || !toNode) return
+
+          const fw = fromEl.offsetWidth,
+            fh = fromEl.offsetHeight
+          const tw = toEl.offsetWidth,
+            th = toEl.offsetHeight
+
+          const fx = fromNode.x + fw / 2,
+            fy = fromNode.y + fh / 2
+          const tx = toNode.x + tw / 2,
+            ty = toNode.y + th / 2
+
+          // Edge points
+          const dx = tx - fx,
+            dy = ty - fy
+          const ang = Math.atan2(dy, dx)
+
+          const [x1, y1] = edgePoint(fromNode.x, fromNode.y, fw, fh, ang)
+          const [x2, y2] = edgePoint(toNode.x, toNode.y, tw, th, ang + Math.PI)
+
+          const color = conn.color || '#aaa'
+          const markId = 'arrow-' + color.replace('#', '')
+
+          // Bezier curve
+          const midX = (x1 + x2) / 2,
+            midY = (y1 + y2) / 2
+          const cpX = midX - dy * 0.2,
+            cpY = midY + dx * 0.2
+          const pathD = `M${x1},${y1} Q${cpX},${cpY} ${x2},${y2}`
+
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+          path.setAttribute('d', pathD)
+          path.setAttribute('stroke', color)
+          path.setAttribute('stroke-width', '1.5')
+          path.setAttribute('fill', 'none')
+          path.setAttribute('opacity', '0.7')
+          path.setAttribute('marker-end', `url(#${markId})`)
+          svgLayer.appendChild(path)
+
+          if (conn.label) {
+            const tx2 = (x1 + x2) / 2,
+              ty2 = (y1 + y2) / 2
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+            text.setAttribute('x', tx2)
+            text.setAttribute('y', ty2 - 5)
+            text.setAttribute('fill', color)
+            text.setAttribute('font-size', '9')
+            text.setAttribute('font-family', 'JetBrains Mono, monospace')
+            text.setAttribute('text-anchor', 'middle')
+            text.setAttribute('opacity', '0.85')
+            text.textContent = conn.label
+            svgLayer.appendChild(text)
+          }
+        })
+      }
+
+      function edgePoint(nx, ny, w, h, angle) {
+        const cx = nx + w / 2,
+          cy = ny + h / 2
+        const cos = Math.cos(angle),
+          sin = Math.sin(angle)
+        const hw = w / 2,
+          hh = h / 2
+        let t
+        if (Math.abs(cos) * hh > Math.abs(sin) * hw) {
+          t = hw / Math.abs(cos)
+        } else {
+          t = hh / Math.abs(sin)
+        }
+        return [cx + cos * t, cy + sin * t]
+      }
+
+      // ============================================================
+      // LOAD DIAGRAM
+      // ============================================================
+      function loadDiagram(id) {
+        currentDiagram = id
+        const diag = DIAGRAMS[id]
+        if (!diag) return
+
+        // Clear
+        canvas.innerHTML = ''
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        svg.id = 'svg-layer'
+        svg.className = 'connections'
+        svg.style.position = 'absolute'
+        svg.style.top = '0'
+        svg.style.left = '0'
+        svg.style.overflow = 'visible'
+        svg.style.width = '100%'
+        svg.style.height = '100%'
+        svg.style.pointerEvents = 'none'
+        canvas.appendChild(svg)
+        svgLayer = svg
+
+        nodes = diag.nodes.map((n) => ({ ...n }))
+        connections = diag.connections || []
+
+        nodes.forEach((n) => renderNode(n))
+
+        // Update select
+        document.getElementById('diag-select').value = id
+        // Update sidebar
+        document.querySelectorAll('.diagram-item').forEach((el, i) => {
+          const ids = [
+            'erd',
+            'class-entity',
+            'class-layer',
+            'seq-login',
+            'seq-booking',
+            'seq-rooms',
+            'arch',
+            'usecase',
+          ]
+          el.classList.toggle('active', ids[i] === id)
+        })
+
+        setTimeout(() => {
+          updateCanvasSize()
+          renderConnections()
+          fitView()
+        }, 120)
+      }
+
+      function selectDiag(id, el) {
+        document.querySelectorAll('.diagram-item').forEach((e) => e.classList.remove('active'))
+        el.classList.add('active')
+        loadDiagram(id)
+      }
+
+      // ============================================================
+      // CANVAS TRANSFORM
+      // ============================================================
+      function applyTransform() {
+        canvas.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`
+        document.getElementById('zoom-label').textContent = Math.round(scale * 100) + '%'
+        statusEl.textContent = `pan:${Math.round(-panX / scale)},${Math.round(-panY / scale)} | zoom:${Math.round(scale * 100)}%`
+        updateMinimap()
+      }
+
+      function zoomIn() {
+        scale = Math.min(scale * 1.2, 3)
+        applyTransform()
+      }
+      function zoomOut() {
+        scale = Math.max(scale / 1.2, 0.15)
+        applyTransform()
+      }
+      function resetView() {
+        scale = 1
+        panX = 60
+        panY = 60
+        applyTransform()
+      }
+
+      function fitView() {
+        if (!nodes.length) return
+        const maxX = Math.max(
+          ...nodes.map((n) => n.x + (document.getElementById('node-' + n.id)?.offsetWidth || 180)),
+        )
+        const maxY = Math.max(
+          ...nodes.map((n) => n.y + (document.getElementById('node-' + n.id)?.offsetHeight || 100)),
+        )
+        const ww = wrap.offsetWidth - 40,
+          wh = wrap.offsetHeight - 40
+        const sx = ww / (maxX + 40),
+          sy = wh / (maxY + 40)
+        scale = Math.min(sx, sy, 1.2)
+        panX = 20
+        panY = 20
+        applyTransform()
+      }
+
+      function updateCanvasSize() {
+        if (!nodes.length) return
+        const maxX = Math.max(...nodes.map((n) => n.x + 300))
+        const maxY = Math.max(...nodes.map((n) => n.y + 300))
+        const svgEl = document.getElementById('svg-layer')
+        if (svgEl) {
+          svgEl.setAttribute('width', maxX)
+          svgEl.setAttribute('height', maxY)
+          svgEl.style.width = maxX + 'px'
+          svgEl.style.height = maxY + 'px'
+        }
+      }
+
+      function autoLayout() {
+        const n = nodes.length
+        const cols = Math.ceil(Math.sqrt(n))
+        nodes.forEach((node, i) => {
+          const col = i % cols,
+            row = Math.floor(i / cols)
+          node.x = 40 + col * 260
+          node.y = 40 + row * 220
+          const el = document.getElementById('node-' + node.id)
+          if (el) {
+            el.style.left = node.x + 'px'
+            el.style.top = node.y + 'px'
+          }
+        })
+        renderConnections()
+        updateCanvasSize()
+        fitView()
+      }
+
+      // ============================================================
+      // DRAG & PAN
+      // ============================================================
+      wrap.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || dragNode) return
+        isPanning = true
+        panStart = { x: e.clientX - panX, y: e.clientY - panY }
+        wrap.style.cursor = 'grabbing'
+      })
+
+      window.addEventListener('mousemove', (e) => {
+        if (dragNode) {
+          const rect = wrap.getBoundingClientRect()
+          const nx = (e.clientX - rect.left - panX) / scale - dragOffset.x
+          const ny = (e.clientY - rect.top - panY) / scale - dragOffset.y
+          dragNode.x = Math.max(0, nx)
+          dragNode.y = Math.max(0, ny)
+          const el = document.getElementById('node-' + dragNode.id)
+          if (el) {
+            el.style.left = dragNode.x + 'px'
+            el.style.top = dragNode.y + 'px'
+          }
+          renderConnections()
+          updateMinimap()
+          return
+        }
+        if (isPanning) {
+          panX = e.clientX - panStart.x
+          panY = e.clientY - panStart.y
+          applyTransform()
+        }
+      })
+
+      window.addEventListener('mouseup', (e) => {
+        if (dragNode) {
+          document.getElementById('node-' + dragNode.id)?.classList.remove('dragging')
+          dragNode = null
+        }
+        if (isPanning) {
+          isPanning = false
+          wrap.style.cursor = 'default'
+        }
+      })
+
+      wrap.addEventListener(
+        'wheel',
+        (e) => {
+          e.preventDefault()
+          const rect = wrap.getBoundingClientRect()
+          const mx = e.clientX - rect.left,
+            my = e.clientY - rect.top
+          const delta = e.deltaY < 0 ? 1.1 : 0.9
+          const newScale = Math.min(Math.max(scale * delta, 0.15), 3)
+          panX = mx - (mx - panX) * (newScale / scale)
+          panY = my - (my - panY) * (newScale / scale)
+          scale = newScale
+          applyTransform()
+        },
+        { passive: false },
+      )
+
+      // ============================================================
+      // MINIMAP
+      // ============================================================
+      function updateMinimap() {
+        const mmCanvas = document.getElementById('mm-canvas')
+        const ctx = mmCanvas.getContext('2d')
+        const mw = 160,
+          mh = 110
+        ctx.clearRect(0, 0, mw, mh)
+        ctx.fillStyle = '#0b0e1a'
+        ctx.fillRect(0, 0, mw, mh)
+
+        if (!nodes.length) return
+        const maxX = Math.max(...nodes.map((n) => n.x + 200)) + 40
+        const maxY = Math.max(...nodes.map((n) => n.y + 160)) + 40
+        const sx = mw / maxX,
+          sy = mh / maxY
+
+        // Draw connections
+        ctx.strokeStyle = 'rgba(79,142,247,0.3)'
+        ctx.lineWidth = 0.5
+        connections.forEach((c) => {
+          const fn = nodes.find((n) => n.id === c.from),
+            tn = nodes.find((n) => n.id === c.to)
+          if (!fn || !tn) return
+          ctx.beginPath()
+          ctx.moveTo(fn.x * sx, fn.y * sy)
+          ctx.lineTo(tn.x * sx, tn.y * sy)
+          ctx.stroke()
+        })
+
+        // Draw nodes
+        nodes.forEach((n) => {
+          const col = TYPE_COLOR[n.type] || '#4f8ef7'
+          ctx.fillStyle = col + '33'
+          ctx.strokeStyle = col
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          ctx.roundRect(n.x * sx, n.y * sy, 20 * sx * 5, 12 * sy * 4, 2)
+          ctx.fill()
+          ctx.stroke()
+        })
+
+        // Viewport indicator
+        const vx = -panX / scale,
+          vy = -panY / scale
+        const vw = wrap.offsetWidth / scale,
+          vh = wrap.offsetHeight / scale
+        const mmv = document.getElementById('mm-viewport')
+        mmv.style.left = Math.max(0, vx * sx) + 'px'
+        mmv.style.top = Math.max(0, vy * sy) + 'px'
+        mmv.style.width = Math.min(mw, vw * sx) + 'px'
+        mmv.style.height = Math.min(mh, vh * sy) + 'px'
+      }
+
+      // ============================================================
+      // INIT
+      // ============================================================
+      panX = 60
+      panY = 40
+      loadDiagram('erd')
+    </script>
+  </body>
+</html>

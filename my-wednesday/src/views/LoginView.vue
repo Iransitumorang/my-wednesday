@@ -23,8 +23,9 @@ const submit = async () => {
     } else {
       await auth.register(username.trim(), password, name.trim())
     }
-    const returnUrl = route.query.returnUrl || '/'
-    router.push(returnUrl)
+    const returnUrl = route.query.returnUrl
+    const dest = auth.isAdmin ? (returnUrl?.startsWith('/admin') ? returnUrl : '/admin/hotels') : (returnUrl || '/')
+    router.push(dest)
   } catch (e) {
     swalToast.error('Gagal', e.message)
   } finally {
@@ -63,6 +64,7 @@ const togglePassword = () => {
   <div class="login-page">
     <div class="login-card">
       <h1 class="login-title">{{ mode === 'login' ? 'Masuk' : 'Daftar' }}</h1>
+      <p v-if="mode === 'register'" class="register-hint">Daftar sebagai Customer. Akun Admin dibuat oleh sistem.</p>
       <form @submit.prevent="submit" class="login-form">
         <div class="form-group">
           <label>Username</label>
@@ -181,9 +183,20 @@ const togglePassword = () => {
 .login-title {
   font-size: 1.75rem;
   font-weight: 800;
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 0.5rem 0;
   color: var(--text);
   text-align: center;
+}
+
+.register-hint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0 0 1.5rem 0;
+  padding: 0.5rem 1rem;
+  background: rgba(34, 211, 238, 0.1);
+  border-radius: 10px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
 }
 
 .form-group {

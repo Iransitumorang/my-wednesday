@@ -173,7 +173,8 @@ onMounted(loadData)
       </div>
     </div>
     <h2 class="rooms-title">Kamar ({{ filteredRooms.length }})</h2>
-    <div class="room-grid">
+    <p v-if="!filteredRooms.length" class="no-rooms-msg">Belum ada kamar tersedia di hotel ini</p>
+    <div v-else class="room-grid">
       <RoomCard
         v-for="(r, i) in filteredRooms"
         :key="r.id"
@@ -293,6 +294,12 @@ onMounted(loadData)
   color: var(--text-muted);
   font-size: 0.9rem;
   margin: -0.5rem 0 1rem 0;
+}
+
+.no-rooms-msg {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin: 0 0 1.5rem 0;
 }
 
 .rooms-title {

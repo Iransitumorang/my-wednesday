@@ -55,11 +55,11 @@ export const getRoomAvailability = (roomId, checkIn, checkOut) =>
   fetchApi(`/rooms/${roomId}/availability?checkIn=${checkIn}&checkOut=${checkOut}`, { skipAuth: true })
 export const createBooking = (body) =>
   fetchApi('/bookings', { method: 'POST', body: JSON.stringify(body) })
-export const getBookings = (customerName, page = 0, size = 20) => {
+export const getBookings = (customerName, page = 0, size = 20, skipAuth = false) => {
   const params = { page, size }
   if (customerName?.trim()) params.customerName = customerName.trim()
   const q = new URLSearchParams(params).toString()
-  return fetchApi(`/bookings?${q}`).then((res) => res?.content ?? res ?? [])
+  return fetchApi(`/bookings?${q}`, { skipAuth }).then((res) => res?.content ?? res ?? [])
 }
 export const getBooking = (id) => fetchApi(`/bookings/${id}`)
 export const cancelBooking = (id) => fetchApi(`/bookings/${id}/cancel`, { method: 'PUT' })

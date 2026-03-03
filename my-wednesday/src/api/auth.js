@@ -11,7 +11,14 @@ const fetchAuth = async (path, body) => {
     err.status = res.status
     try {
       err.body = await res.json()
-      err.message = err.body?.message || res.statusText
+      const v = err.body?.violations
+      const fallback = err.body?.message || err.body?.detail || res.statusText
+      if (Array.isArray(v) && v.length) {
+        const msg = v.map((x) => x.message).filter(Boolean).join('. ')
+        err.message = msg ? msg.charAt(0).toUpperCase() + msg.slice(1) : fallback
+      } else {
+        err.message = typeof fallback === 'string' ? fallback : res.statusText
+      }
     } catch (_) {
       err.message = res.statusText
     }

@@ -18,8 +18,8 @@ const room = ref(null)
 const otherRooms = ref([])
 const loading = ref(true)
 
-const checkIn = ref('')
-const checkOut = ref('')
+const checkIn = ref(route.query.checkIn || '')
+const checkOut = ref(route.query.checkOut || '')
 const available = ref(null)
 const userBookedRoomIds = ref(new Set())
 
@@ -83,6 +83,13 @@ watch(
 )
 
 watch(() => route.params.id, loadData)
+watch(
+  () => [route.query.checkIn, route.query.checkOut],
+  ([ci, co]) => {
+    if (ci) checkIn.value = ci
+    if (co) checkOut.value = co
+  }
+)
 
 const canBook = computed(() => {
   if (!room.value?.id) return false
