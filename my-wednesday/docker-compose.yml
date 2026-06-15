@@ -1,0 +1,8 @@
+services:
+  my-wednesday:
+    build:
+      context: .
+      dockerfile: Dockerfile.new
+    container_name: my-wednesday
+    ports:
+      - "8091:80"
