@@ -1,89 +1,111 @@
 import { defineStore } from 'pinia'
-import { login as apiLogin, register as apiRegister, getAuthMe } from '../api/auth'
+import { login as loginApi, register as registerApi, getAuthMe } from '../api/auth'
 
-const STORAGE_KEY = 'auth'
 const TOKEN_KEY = 'auth_token'
+const USER_KEY = 'auth_user'
 
-const loadFromStorage = () => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY)
-    if (data) return JSON.parse(data)
-  } catch (_) {}
-  return null
+const normalizeRole = (role) => {
+  if (!role) return ''
+  return role.charAt(0).toUpperCase() + role.slice(1).toLowerCase()
 }
 
-const saveToStorage = (data) => {
-  try {
-    if (data) {
-      const token = (data.token != null ? String(data.token).trim().replace(/^["']|["']$/g, '') : null) || ''
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...data, token: token || null }))
-      localStorage.setItem(TOKEN_KEY, token)
-    } else {
-      localStorage.removeItem(STORAGE_KEY)
-      localStorage.removeItem(TOKEN_KEY)
-    }
-  } catch (_) {}
+const normalizeUser = (data) => {
+  if (!data) return null
+
+  return {
+    username: data.username || '',
+    name: data.name || data.username || '',
+    role: normalizeRole(data.role),
+    groups: data.groups || [],
+  }
 }
 
 export const useAuthStore = defineStore('auth', {
-  state: () => {
-    const stored = loadFromStorage()
-    return {
-      token: stored?.token ?? null,
-      username: stored?.username ?? null,
-      name: stored?.name ?? null,
-      role: stored?.role ?? null,
-    }
-  },
+  state: () => ({
+    token: localStorage.getItem(TOKEN_KEY) || null,
+    user: JSON.parse(localStorage.getItem(USER_KEY) || 'null'),
+    loading: false,
+    error: null,
+  }),
+
   getters: {
-    isLoggedIn: (state) => !!state.token,
-    isAdmin: (state) => (state.role || '').toLowerCase() === 'admin',
-    isUser: (state) => state.role === 'user',
-    displayName: (state) => state.name || state.username || '-',
+    isAuthenticated: (state) => Boolean(state.token),
+
+    displayName: (state) => {
+      return state.user?.name || state.user?.username || 'Masuk'
+    },
+
+    isAdmin: (state) => {
+      const role = state.user?.role?.toLowerCase()
+      const groups = state.user?.groups || []
+
+      return role === 'admin' || groups.includes('Admin')
+    },
   },
+
   actions: {
-    setAuth(data) {
-      const token = data?.token != null ? String(data.token).trim().replace(/^["']|["']$/g, '') : null
-      this.token = token
-      this.username = data?.username ?? null
-      this.name = data?.name ?? null
-      this.role = data?.role?.toLowerCase?.() ?? null
-      saveToStorage(data ? { ...data, token, role: this.role } : null)
+    setSession(data) {
+      this.token = data.token
+      this.user = normalizeUser(data)
+
+      localStorage.setItem(TOKEN_KEY, data.token)
+      localStorage.setItem(USER_KEY, JSON.stringify(this.user))
     },
+
     async login(username, password) {
-      const res = await apiLogin(username, password)
-      this.setAuth(res)
-      const me = await getAuthMe()
-      if (me) {
-        const role = (me.role ?? me.groups?.[0])?.toLowerCase?.() || 'user'
-        this.setAuth({ token: res.token, username: me.username, name: me.name, role })
+      this.loading = true
+      this.error = null
+
+      try {
+        const data = await loginApi(username, password)
+        this.setSession(data)
+        return data
+      } catch (error) {
+        this.error = error.message || 'Login gagal'
+        this.logout()
+        throw error
+      } finally {
+        this.loading = false
       }
-      return res
     },
+
     async register(username, password, name) {
-      const res = await apiRegister(username, password, name)
-      this.setAuth(res)
-      const me = await getAuthMe()
-      if (me) {
-        const role = (me.role ?? me.groups?.[0])?.toLowerCase?.() || 'user'
-        this.setAuth({ token: res.token, username: me.username, name: me.name, role })
+      this.loading = true
+      this.error = null
+
+      try {
+        const data = await registerApi(username, password, name)
+        this.setSession(data)
+        return data
+      } catch (error) {
+        this.error = error.message || 'Register gagal'
+        this.logout()
+        throw error
+      } finally {
+        this.loading = false
       }
-      return res
     },
+
+    async fetchMe() {
+      if (!this.token) return null
+
+      try {
+        const data = await getAuthMe()
+        this.user = normalizeUser(data)
+        localStorage.setItem(USER_KEY, JSON.stringify(this.user))
+        return data
+      } catch {
+        return this.user
+      }
+    },
+
     logout() {
-      this.setAuth(null)
-    },
-    async validateToken() {
-      const token = localStorage.getItem(TOKEN_KEY)
-      if (!token) return false
-      const me = await getAuthMe()
-      if (!me) {
-        this.setAuth(null)
-        return false
-      }
-      const role = (me.role ?? me.groups?.[0])?.toLowerCase?.() || 'user'
-      this.setAuth({ token, username: me.username, name: me.name, role })
-      return true
+      this.token = null
+      this.user = null
+      this.error = null
+
+      localStorage.removeItem(TOKEN_KEY)
+      localStorage.removeItem(USER_KEY)
     },
   },
 })

@@ -5,22 +5,34 @@ import { useAuthStore } from '../stores/auth'
 import { useRouter, useRoute, RouterLink } from 'vue-router'
 
 const auth = useAuthStore()
-const { isLoggedIn, isAdmin, displayName } = storeToRefs(auth)
+const { isAuthenticated, isAdmin, displayName } = storeToRefs(auth)
+
 const router = useRouter()
 const route = useRoute()
+
 const searchQuery = ref(route.query.q || '')
 const showUserMenu = ref(false)
 
+const isLoggedIn = computed(() => isAuthenticated.value)
+
 watch(
   () => route.query.q,
-  (q) => { searchQuery.value = q || '' }
+  (q) => {
+    searchQuery.value = q || ''
+  },
 )
 
-const onSearch = (e) => {
-  e?.preventDefault()
+const onSearch = (event) => {
+  event?.preventDefault()
+
   const q = searchQuery.value.trim()
-  if (q) router.push({ path: '/hotels', query: { q } })
-  else router.push('/hotels')
+
+  if (q) {
+    router.push({ path: '/hotels', query: { q } })
+    return
+  }
+
+  router.push('/hotels')
 }
 
 const clearSearch = () => {
@@ -34,16 +46,28 @@ const logout = () => {
   router.replace('/login')
 }
 
-const closeMenu = (e) => {
-  if (!e.target.closest('.user-wrap')) showUserMenu.value = false
+const closeMenu = (event) => {
+  if (!event.target.closest('.user-wrap')) {
+    showUserMenu.value = false
+  }
 }
 
 const initials = computed(() => {
-  const n = (displayName.value || '').trim()
-  if (!n) return '?'
-  const parts = n.split(/\s+/)
-  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-  return n.slice(0, 2).toUpperCase()
+  const name = (displayName.value || '').trim()
+
+  if (!name || name === 'Masuk') return '?'
+
+  const parts = name.split(/\s+/)
+
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
+  }
+
+  return name.slice(0, 2).toUpperCase()
+})
+
+const userRole = computed(() => {
+  return auth.user?.role || auth.user?.groups?.[0] || ''
 })
 
 onMounted(() => {
@@ -60,6 +84,7 @@ onUnmounted(() => {
     <RouterLink to="/" class="logo">
       <span class="logo-text">Iran Situmorang</span>
     </RouterLink>
+
     <form class="search-wrap" @submit="onSearch">
       <div class="search-inner">
         <input
@@ -69,6 +94,7 @@ onUnmounted(() => {
           class="search-input"
           aria-label="Cari hotel"
         />
+
         <button
           v-if="searchQuery"
           type="button"
@@ -78,25 +104,59 @@ onUnmounted(() => {
         >
           ×
         </button>
+
         <button type="submit" class="search-btn" aria-label="Cari">🔍</button>
       </div>
     </form>
+
     <nav class="nav">
       <RouterLink to="/" class="nav-link" active-class="active">Home</RouterLink>
       <RouterLink to="/hotels" class="nav-link" active-class="active">Hotel</RouterLink>
-      <RouterLink v-if="!isAdmin" to="/bookings" class="nav-link" active-class="active">Booking Saya</RouterLink>
-      <RouterLink v-if="isAdmin" to="/bookings" class="nav-link" active-class="active">Bookings</RouterLink>
-      <RouterLink v-if="isAdmin" to="/admin/hotels" class="nav-link" active-class="active">Admin</RouterLink>
-      <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">Masuk</RouterLink>
-      <div v-else class="user-wrap" @click="showUserMenu = !showUserMenu">
+
+      <RouterLink
+        v-if="!isAdmin"
+        to="/bookings"
+        class="nav-link"
+        active-class="active"
+      >
+        Booking Saya
+      </RouterLink>
+
+      <RouterLink
+        v-if="isAdmin"
+        to="/bookings"
+        class="nav-link"
+        active-class="active"
+      >
+        Bookings
+      </RouterLink>
+
+      <RouterLink
+        v-if="isAdmin"
+        to="/admin/hotels"
+        class="nav-link"
+        active-class="active"
+      >
+        Admin
+      </RouterLink>
+
+      <RouterLink v-if="!isLoggedIn" to="/login" class="btn-login">
+        Masuk
+      </RouterLink>
+
+      <div v-else class="user-wrap" @click.stop="showUserMenu = !showUserMenu">
         <div class="user-avatar">{{ initials }}</div>
+
         <div class="user-info">
           <span class="user-name">{{ displayName }}</span>
-          <span class="user-role">{{ auth.role }}</span>
+          <span v-if="userRole" class="user-role">{{ userRole }}</span>
         </div>
+
         <Transition name="dropdown">
           <div v-if="showUserMenu" class="user-dropdown" @click.stop>
-            <button class="dropdown-item" @click="logout">Keluar</button>
+            <button class="dropdown-item" type="button" @click="logout">
+              Keluar
+            </button>
           </div>
         </Transition>
       </div>
@@ -127,6 +187,7 @@ onUnmounted(() => {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -166,6 +227,7 @@ onUnmounted(() => {
   0% {
     background-position: 0% center;
   }
+
   100% {
     background-position: 200% center;
   }

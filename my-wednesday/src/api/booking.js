@@ -4,34 +4,41 @@
  */
 const BASE = import.meta.env.VITE_API_URL || ''
 
-const getAuthHeaders = (skipAuth) => {
+const getToken = () => {
+  const raw = (localStorage.getItem('auth_token') || '').trim()
+  return raw.replace(/^["']|["']$/g, '') || null
+}
+
+const getAuthHeaders = (skipAuth = false) => {
   if (skipAuth) return {}
 
-  const raw = (localStorage.getItem('auth_token') || '').trim()
-  const token = raw.replace(/^["']|["']$/g, '')
-
+  const token = getToken()
   if (!token) return {}
 
-  return { Authorization: `Bearer ${token}` }
+  return {
+    Authorization: `Bearer ${token}`,
+  }
 }
 
 const fetchApi = async (path, opts = {}) => {
-  const { skipAuth, headers: customHeaders, body, ...rest } = opts
+  const { skipAuth = false, headers: customHeaders = {}, body, ...rest } = opts
 
   const headers = {
     ...getAuthHeaders(skipAuth),
     ...customHeaders,
   }
 
-  if (body) {
-    headers['Content-Type'] = 'application/json'
-  }
-
-  const res = await fetch(`${BASE}${path}`, {
+  const requestOptions = {
     ...rest,
     headers,
-    body,
-  })
+  }
+
+  if (body !== undefined && body !== null) {
+    headers['Content-Type'] = 'application/json'
+    requestOptions.body = typeof body === 'string' ? body : JSON.stringify(body)
+  }
+
+  const res = await fetch(`${BASE}${path}`, requestOptions)
 
   if (!res.ok) {
     const err = new Error('API Error')
@@ -40,11 +47,11 @@ const fetchApi = async (path, opts = {}) => {
     try {
       err.body = await res.json()
 
-      const v = err.body?.violations
+      const violations = err.body?.violations
       const fallback = err.body?.message || err.body?.detail || res.statusText
 
-      if (Array.isArray(v) && v.length) {
-        const msg = v.map((x) => x.message).filter(Boolean).join('. ')
+      if (Array.isArray(violations) && violations.length) {
+        const msg = violations.map((item) => item.message).filter(Boolean).join('. ')
         err.message = msg ? msg.charAt(0).toUpperCase() + msg.slice(1) : fallback
       } else {
         err.message = typeof fallback === 'string' ? fallback : res.statusText
@@ -72,6 +79,9 @@ const fetchList = async (path, params = {}, skipAuth = false) => {
   return res?.content ?? res ?? []
 }
 
+/**
+ * Public endpoints
+ */
 export const getHotels = (page = 0, size = 20) =>
   fetchList('/hotels', { page, size }, true)
 
@@ -92,13 +102,16 @@ export const getRoomAvailability = (roomId, checkIn, checkOut) =>
     skipAuth: true,
   })
 
+/**
+ * Authenticated booking endpoints
+ */
 export const createBooking = (body) =>
   fetchApi('/bookings', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body,
   })
 
-export const getBookings = (customerName, page = 0, size = 20, skipAuth = false) => {
+export const getBookings = (customerName, page = 0, size = 20) => {
   const params = { page, size }
 
   if (customerName?.trim()) {
@@ -107,41 +120,50 @@ export const getBookings = (customerName, page = 0, size = 20, skipAuth = false)
 
   const q = new URLSearchParams(params).toString()
 
-  return fetchApi(`/bookings?${q}`, { skipAuth }).then((res) => res?.content ?? res ?? [])
+  return fetchApi(`/bookings?${q}`).then((res) => res?.content ?? res ?? [])
 }
 
 export const getBooking = (id) =>
   fetchApi(`/bookings/${id}`)
 
 export const cancelBooking = (id) =>
-  fetchApi(`/bookings/${id}/cancel`, { method: 'PUT' })
+  fetchApi(`/bookings/${id}/cancel`, {
+    method: 'PUT',
+  })
 
+/**
+ * Admin endpoints
+ */
 export const createHotel = (body) =>
   fetchApi('/hotels', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body,
   })
 
 export const updateHotel = (id, body) =>
   fetchApi(`/hotels/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(body),
+    body,
   })
 
 export const deleteHotel = (id) =>
-  fetchApi(`/hotels/${id}`, { method: 'DELETE' })
+  fetchApi(`/hotels/${id}`, {
+    method: 'DELETE',
+  })
 
 export const createRoom = (body) =>
   fetchApi('/rooms', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body,
   })
 
 export const updateRoom = (id, body) =>
   fetchApi(`/rooms/${id}`, {
     method: 'PUT',
-    body: JSON.stringify(body),
+    body,
   })
 
 export const deleteRoom = (id) =>
-  fetchApi(`/rooms/${id}`, { method: 'DELETE' })
+  fetchApi(`/rooms/${id}`, {
+    method: 'DELETE',
+  })
