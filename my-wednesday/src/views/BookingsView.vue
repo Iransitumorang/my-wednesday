@@ -42,14 +42,17 @@ const formatDate = (d) => {
 }
 
 const loadBookings = async () => {
-  if (!auth.isLoggedIn) return
+  if (!auth.isLoggedIn) {
+    loading.value = false
+    return
+  }
   loading.value = true
   loadError.value = null
   try {
     bookings.value = await getBookings(filterValue.value)
   } catch (e) {
     loadError.value = e.status === 500
-      ? 'Server sedang bermasalah. Pastikan backend berjalan di localhost:8080.'
+      ? 'Server sedang bermasalah. Pastikan backend berjalan dengan benar.'
       : (e.message || 'Gagal memuat booking')
   } finally {
     loading.value = false
@@ -111,10 +114,12 @@ watch(filterValue, loadBookings)
         </select>
       </div>
     </div>
-    <p v-if="!auth.isLoggedIn" class="no-results">Silakan login untuk melihat booking</p>
-    <p v-else-if="loading" class="loading-msg">Memuat...</p>
+    
+    <p v-if="!auth.isLoggedIn" class="no-results alert-warn">Silakan login untuk melihat booking</p>
+    <p v-else-if="loading" class="loading-msg">Memuat data booking...</p>
     <p v-else-if="loadError" class="error-msg">{{ loadError }}</p>
-    <p v-else-if="!filteredBookings.length" class="no-results">Tidak ada booking</p>
+    <p v-else-if="!filteredBookings.length" class="no-results">Belum ada data booking yang tersedia</p>
+    
     <div v-else class="bookings-list">
       <div
         v-for="b in filteredBookings"
@@ -234,6 +239,8 @@ watch(filterValue, loadBookings)
 .loading-msg {
   color: var(--text-muted);
   margin-bottom: 1rem;
+  text-align: center;
+  padding: 3rem;
 }
 
 .error-msg {
@@ -248,6 +255,12 @@ watch(filterValue, loadBookings)
   color: var(--text-muted);
   text-align: center;
   padding: 3rem;
+}
+
+.alert-warn {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border-radius: 8px;
 }
 
 .bookings-list {

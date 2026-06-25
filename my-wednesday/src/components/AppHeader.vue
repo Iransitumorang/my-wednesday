@@ -119,7 +119,7 @@ onUnmounted(() => {
         class="nav-link"
         active-class="active"
       >
-        Booking Saya
+        Booking
       </RouterLink>
 
       <RouterLink
