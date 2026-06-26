@@ -107,5 +107,18 @@ export const useAuthStore = defineStore('auth', {
       localStorage.removeItem(TOKEN_KEY)
       localStorage.removeItem(USER_KEY)
     },
+    
+    async validateToken() {
+      const token = localStorage.getItem(TOKEN_KEY)
+      if (!token) return false
+      const me = await getAuthMe()
+      if (!me) {
+        this.setAuth(null)
+        return false
+      }
+      const role = (me.role ?? me.groups?.[0])?.toLowerCase?.() || 'user'
+      this.setAuth({ token, username: me.username, name: me.name, role })
+      return true
+    },
   },
 })
